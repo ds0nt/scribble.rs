@@ -1,13 +1,26 @@
 @font-face {
-    font-family: 'Montserrat';
+    font-family: 'Roboto'; /*'Montserrat'*/
     font-weight: normal;
-    src: local('Monserrat'), url(/resources/Montserrat-Regular.otf) format("opentype");
+    src: local('Roboto'), url(/resources/Roboto-Regular.ttf) format("truetype");
+	/* src: local('Monserrat'), url(/resources/Montserrat-Regular.otf) format("opentype"); */
 }
 
 @font-face {
-    font-family: 'Montserrat';
+    font-family: 'Roboto'; /*'Montserrat'*/ 
     font-weight: bold;
-    src: local('Monserrat Bold'), url(/resources/Montserrat-Bold.otf) format("opentype");
+	src: local('Roboto Bold'), url(/resources/Roboto-Bold.ttf) format("truetype");
+    /* src: local('Monserrat Bold'), url(/resources/Montserrat-Bold.otf) format("opentype"); */
+}
+
+html {
+    font-family: 'Roboto';
+}
+ 
+body {
+    background-color: #EEF7EF;
+	margin: 0;
+    position: relative;
+    min-height: 100vh;
 }
 
 a:link, a:visited {
@@ -20,20 +33,6 @@ a {
 
 a:hover {
     text-decoration: underline;
-}
-
-html {
-    font-family: 'Montserrat';
-}
-
-body {
-    margin: 0;
-    position: relative;
-    min-height: 100vh;
-}
-
-.content-wrapper {
-    padding-bottom: 2rem;
 }
 
 h1, h2 {
@@ -54,22 +53,63 @@ ul {
     margin: 0;
 }
 
-footer {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: absolute;
-    bottom: 0;
-    height: 2rem;
+/*Header CSS*/
+header {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+    top: 0;
+    height: 120px;
     width: 100%;
-    background-color: lightslategray;
-    color: white;
+    background-color: #FFFFFF;
+	font-size: 22px;
+	font-weight: bold;
 }
 
-.footer-item+.footer-item {
-    margin-left: 1rem;
+.header-item {
+	margin-right: auto;
+	margin-left: 48px;
+	height: 88px !important;
+	color: #E37263 !important
 }
 
+.header-item-about {
+	margin-right: 104px;
+	margin-left: 0px;	
+	padding: 0px;
+	color: #E37263 !important
+}
+
+.header-item-support {
+	margin-right: 104px;
+	margin-left: 0px;	
+	padding: 0px;
+	color: #E37263 !important
+}
+
+.header-item-button {
+	margin-right: 48px;
+	margin-left: 0px;
+	padding: 0px;
+	width: 170px;
+	height: 55px;
+	border: 2px solid #E37263;
+	border-radius: 78px;
+	opacity: 1;
+	color: #E37263 !important
+}
+
+#exit {
+	position: absolute;
+	top: 48px;
+	padding-left: 34px;
+}
+
+.content-wrapper {
+    padding-bottom: 2rem;
+}
+
+/*Container CSS*/
 .center-container {
     display: flex;
     flex-direction: column;
@@ -109,4 +149,13 @@ footer {
     margin-bottom: 20px;
     grid-column-start: 1;
     grid-column-end: 3;
+}
+
+.noscript {
+    display: flex;
+    font-size: 2.5rem;
+    font-weight: bold;
+    justify-content: center;
+    border-bottom: 1rem solid black;
+    padding: 10px;
 }
