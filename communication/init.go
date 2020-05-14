@@ -19,29 +19,32 @@ var (
 //panic.
 func init() {
 	var parseError error
+	// Error Page
 	errorPage, parseError = template.New("error.html").Parse(readTemplateFile("error.html"))
 	if parseError != nil {
 		panic(parseError)
 	}
-	errorPage, parseError = errorPage.New("footer.html").Parse(readTemplateFile("footer.html"))
+	errorPage, parseError = errorPage.New("header.html").Parse(readTemplateFile("header.html"))
 	if parseError != nil {
 		panic(parseError)
 	}
 
+	// Create Lobby Page
 	lobbyCreatePage, parseError = template.New("lobby_create.html").Parse(readTemplateFile("lobby_create.html"))
 	if parseError != nil {
 		panic(parseError)
 	}
-	lobbyCreatePage, parseError = lobbyCreatePage.New("footer.html").Parse(readTemplateFile("footer.html"))
+	lobbyCreatePage, parseError = lobbyCreatePage.New("header.html").Parse(readTemplateFile("header.html"))
 	if parseError != nil {
 		panic(parseError)
 	}
 
+	// Main Game Page
 	lobbyPage, parseError = template.New("lobby.html").Parse(readTemplateFile("lobby.html"))
 	if parseError != nil {
 		panic(parseError)
 	}
-	lobbyPage, parseError = lobbyPage.New("footer.html").Parse(readTemplateFile("footer.html"))
+	lobbyPage, parseError = lobbyPage.New("header.html").Parse(readTemplateFile("header.html"))
 	if parseError != nil {
 		panic(parseError)
 	}
