@@ -1,6 +1,6 @@
 body {
     background-color: #EEF7EF;
-    margin: 0 5vw;
+
 }
 
 .noscript {
@@ -25,7 +25,7 @@ body {
 }
 
 #time-left {
-    margin-left: 55vw;
+    margin-left: 67vw;
     font-size: 1.5rem;
 }
 
@@ -57,9 +57,10 @@ body {
 #lobby {
     padding: 5px;
     display: grid;
-    grid-template-columns: 15vw 50vw 20vw;
+    grid-template-columns: 15vw 60vw 20vw;
     grid-template-rows: 8vh auto;
-    grid-column-gap: 20px;
+    grid-column-gap: 1vw;
+    margin: 0 1vw;
     grid-template-areas:
     "timeBox timeBox timeBox"
     "player-container drawing-board-wrapper video-grid";
