@@ -1,75 +1,39 @@
 #player-container {
-    display: flex;
-    flex-direction: column;
-    grid-column: 1;
-    grid-row-start: 2;
-    grid-row-end: 4;
-}
-
-.player {
-    background-color: rgb(245, 245, 245);
-    padding: 0.2rem;
+    grid-area: player-container;
     display: grid;
-    grid-template-columns: fit-content(100%) auto;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 8vh 7vh 7vh 7vh 7vh 7vh 7vh 7vh 7vh 7vh;
 }
-
-.player-done {
-    background-color: rgb(141, 224, 15);
+.playerBox{
+    display: grid;
+    grid-template-columns: auto auto auto;
+    background: #F5F5F5 0% 0% no-repeat padding-box;
+    border: solid #707070 1px;
 }
-
-.player + .player {
-    margin-top: 5px;
-}
-
-.rank {
+.playerName{
     display: flex;
-    grid-row-start: 1;
-    grid-row-end: 3;
-    justify-content: center;
     align-items: center;
-    width: 2.5rem;
-    font-size: 1.5rem;
+    line-height: 100%;
+    text-align: left;
+    letter-spacing: 0;
+    color: #363636;
+    height: 100%;
 }
-
-.kick-button {
-    border: 0;
-    padding: 2px;
-    background-color: rgb(218, 218, 218);
-}
-
-.kick-button:hover {
-    background-color: rgb(244, 183, 247);
-}
-
-.kick-button:active {
-    background-color: rgb(243, 132, 247);
-}
-
-.name-and-buttons {
+.playerScore{
+    height: 100%;
     display: flex;
-    flex-direction: row;
-    overflow: hidden;
-}
-
-.score-and-status {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-.last-turn-score {
-    font-size: 0.8rem;
-    color: lightslategray;
-}
-
-.playername {
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-    flex: 1;
-}
-
-.playername-self {
+    align-items: center;
+    text-align: left;
+    letter-spacing: 0;
+    color: #363636;
     font-weight: bold;
 }
+.self {
+    font-weight: bold;
+}
+
+.playerBox  img{
+    height: 100%;
+    display: block;
+}
+
+

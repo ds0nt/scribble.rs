@@ -10,41 +10,6 @@
     <link rel="stylesheet" type="text/css" href="/resources/lobby_players.css"/>
     <link rel="icon" type="image/png" href="/resources/favicon.png"/>
 </head>
-<body><style type="text/css">
-    .video-grid{
-        /* border: antiquewhite 2px solid; */
-        padding: 0%;
-        margin: 0px;
-        width: 100%;
-        display: flex;
-        gap: -20%;
-         flex-direction: row; 
-        /* flex-wrap: wrap; */
-        overflow: hidden;
-        position: relative;
-        flex-flow: wrap;
-        right: 2px;
-        align-content: flex-start;
-    }
-    #local_stream{
-        /* border: #F3C010 solid 2px; */
-        /* margin: 2px; */
-        width: 8vw;
-        height: 6vw;
-        padding: 0%;
-        margin: 0px;
-    }
-    .video-placeholder{
-        /* border:  #b2ff59 solid 2px; */
-        /* margin: 2px; */
-        width: 8vw;
-        height: 6vw;
-        padding: 0%;
-        margin: 0px;
-        
-    }
-
-</style>
 
 <noscript><span class="noscript">Hey, seems like you've disabled JavaScript.
             I get it ... but you are trying to play an interactive drawing game
@@ -53,7 +18,7 @@
 {{template "header"}}
 
 <div id="lobby">
-    <div id="top-left-cell">
+ <!--   <div id="top-left-cell">
         <span id="rounds"></span>
         <label for="sound-toggle">
             <input class="custom-check-or-radio sound-toggle-input" type="checkbox" name="sound-toggle"
@@ -61,45 +26,69 @@
             <span id="sound-toggle-label"></span>
         </label>
     </div>
-    <div id="word-container"></div>
-    <span id="time-left">Time Left: ∞</span>
+    <div id="word-container"></div>-->
+    <div class="timeBox">
+        <span id="time-left">Time Left: ∞</span>
+    </div>
+    <div id="player-container">
+       <div id="rounds"></div>
+           <div class="playerBox self">
+               <img src="../resources/image/avatar_hannah.png" alt="">
+               <div class="playerName self">dora</div>
+               <div class="playerScore">0</div>
+           </div>
+        <div class="playerBox">
+            <img src="../resources/image/avatar_phillip.png" alt="">
+            <div class="playerName self">james</div>
+            <div class="playerScore">0</div>
+        </div>
 
-    <div id="player-container"></div>
-
+       </div>
     <div id="drawing-board-wrapper">
-        <div id="drawing-board-inner-wrapper">
-            <canvas id="drawing-board"></canvas>
-            <div id="center-dialog">
-                <div id="word-dialog" class="center-dialog-content">
-                    <span class="dialog-title">Choose a word</span>
-                    <div class="word-button-container">
-                        <button id="word-button-zero" class="dialog-button" onclick="chooseWord(0)">Placeholder</button>
-                        <button id="word-button-one" class="dialog-button" onclick="chooseWord(1)">Placeholder</button>
-                        <button id="word-button-two" class="dialog-button" onclick="chooseWord(2)">Placeholder</button>
-                    </div>
-                </div>
-                <div id="start-dialog" class="center-dialog-content">
-                    <span class="dialog-title">Start the game</span>
-                    <button class="dialog-button" onclick="startGame()">Start</button>
-                </div>
-            </div>
+           <div id="word-container">
+               <span class="guess-letter guess-letter-underline">Welcome</span>
+           </div>
+           <div id="drawing-board-inner-wrapper">
+               <canvas id="drawing-board"></canvas>
+               <div id="center-dialog">
+                   <div id="word-dialog" class="center-dialog-content">
+                       <span class="dialog-title">Choose a word</span>
+                       <div class="word-button-container">
+                           <button id="word-button-zero" class="dialog-button" onclick="chooseWord(0)">Placeholder</button>
+                           <button id="word-button-one" class="dialog-button" onclick="chooseWord(1)">Placeholder</button>
+                           <button id="word-button-two" class="dialog-button" onclick="chooseWord(2)">Placeholder</button>
+                       </div>
+                   </div>
+                   <div id="start-dialog" class="center-dialog-content">
+                       <span class="dialog-title">Start the game</span>
+                       <button class="dialog-button" onclick="startGame()">Start</button>
+                   </div>
+               </div>
+           </div>
+        <div class="guess-input">
+            <div class="guess-title">Type in box to guess:</div>
+            <form class="message-input-form" onsubmit="return sendMessage()">
+                <input id="message-input" type="text" autocomplete="off" placeholder="Type in box to guess:"/>
+            </form>
         </div>
-    </div>
+       </div>
     <div class="video-grid" id="video">
-        <div class="video-view">
-            <div id="local_stream" class="video-placeholder"></div>
-        </div>
-    </div>
+           <div class="video-view">
+               <div id="local_stream" class="video-placeholder"></div>
+           </div>
+       </div>
+
      <div id="chat" style="display: none">
         <div id="message-container">
             <b>Type !nick "Name" to change your name.</b>
         </div>
-        
-    </div> 
-    
-    <form class="message-input-form" onsubmit="return sendMessage()">
+
+    </div>
+  <!--  <form class="message-input-form" onsubmit="return sendMessage()">
         <input id="message-input" type="text" autocomplete="off" placeholder="Type your message"/>
-    </form>
+    </form>-->
+
+
     <div id="toolbox">
         <input class="toolbox-group" type="color" id="color-picker" onchange="setColor()" value="#000000"
                alt="Current color (Click to change)" title="Current color (Click to change)">
@@ -225,13 +214,13 @@
     }
 
     const messageInput = document.getElementById("message-input");
-    const playerContainer = document.getElementById("player-container");
+    const playerContainer = document.getElementById("1player-container");
     const wordContainer = document.getElementById("word-container");
     const messageContainer = document.getElementById("message-container");
     const roundsSpan = document.getElementById("rounds");
     const timeLeft = document.getElementById("time-left");
     const drawingBoard = document.getElementById("drawing-board");
-    const chat = document.getElementById("chat");
+    //const chat = document.getElementById("chat");
     const colorPicker = document.getElementById("color-picker");
     const centerDialog = document.getElementById("center-dialog");
 
@@ -241,13 +230,13 @@
     const wordButtonOne = document.getElementById("word-button-one");
     const wordButtonTwo = document.getElementById("word-button-two");
 
-    const noSoundIcon = "🔇";
-    const soundIcon = "🔊";
-    const soundToggleLabel = document.getElementById("sound-toggle-label");
-    let sound = localStorage.getItem("sound") === "true";
-    updateSoundIcon();
+   // const noSoundIcon = "🔇";
+   // const soundIcon = "🔊";
+   // const soundToggleLabel = document.getElementById("sound-toggle-label");
+   // let sound = localStorage.getItem("sound") === "true";
+  //  updateSoundIcon();
 
-    function toggleSound() {
+  /*  function toggleSound() {
         sound = !sound;
         localStorage.setItem("sound", sound.toString());
         updateSoundIcon();
@@ -259,7 +248,7 @@
         } else {
             soundToggleLabel.innerText = noSoundIcon;
         }
-    }
+    }*/
 
     //The drawing board has a base size. This base size results in a certain ratio
     //that the actual canvas has to be resized accordingly too. This is needed
@@ -476,7 +465,8 @@
 
             roundEndTime = parsed.data.roundEndTime;
             applyRounds(parsed.data.round, maxRounds);
-            applyPlayers(parsed.data.players);
+            //add player james
+            //applyPlayers(parsed.data.players);
 
             //We clear this, since there's no word chosen right now.
             wordContainer.innerHTML = "";
@@ -528,7 +518,7 @@
     }
 
     function applyPlayers(players) {
-        playerContainer.innerHTML = "";
+        //playerContainer.innerHTML = "";
         players.forEach(function (player) {
             //We don't wanna show the disconnected players.
             if (!player.connected) {
@@ -566,7 +556,11 @@
                 newPlayerElement += '<span>✔️</span>';
             }
             newPlayerElement += '</div></div>';
-            playerContainer.innerHTML += newPlayerElement;
+            let newPlayer = document.createRange().createContextualFragment(newPlayerElement);
+            console.log(newPlayer);
+            playerContainer.appendChild(newPlayer);
+            //playerContainer.innerHTML += newPlayerElement;
+
         });
     }
 
@@ -883,11 +877,11 @@
             {
                 //appId, token, channel are from agora
                 //appID
-                appID:"", //replace with app ID, 
+                appID:"5f05c8ce1679426aac75f20b14e83bfc", //replace with app ID,
                 //TOKEN will need to be generated by server (agora docs have a walkthrough)
-                token:"", //replace with channel token,
+                token:"0065f05c8ce1679426aac75f20b14e83bfcIABpX9EZpCdpd84l6Ou9intToL7gMJnR40r/c4O1V7IXevfI+dsAAAAAEADxMb4b00fWXgEAAQDKR9Ze", //replace with channel token,
                 //Channel will be what varies from lobby to lobby (works alongside the token)
-                channel:"", //replace with channel name (linked with token),
+                channel:"1111", //replace with channel name (linked with token),
                 mode:"live",
                 codec:"h264"
             }

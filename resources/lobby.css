@@ -1,5 +1,6 @@
 body {
     background-color: #EEF7EF;
+    margin: 0 5vw;
 }
 
 .noscript {
@@ -10,22 +11,32 @@ body {
     border-bottom: 1rem solid black;
     padding: 10px;
 }
-
-#top-left-cell {
-    display: flex;
-}
-
 #rounds {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.7rem;
-    flex: 1;
+    text-align: center;
+    background: #707070 0% 0% no-repeat padding-box;
+    border: 1px solid #707070;
+    letter-spacing: 0;
+    color: #FFFFFF;
+
 }
 
 #time-left {
+    margin-left: 55vw;
     font-size: 1.5rem;
 }
 
 #word-container {
-    text-align: center;
+    height: 8vh;
+    display: flex;
+    font: Bold 36px/43px Roboto;
+    justify-content: space-around;
+    align-items: center;
+    background: #000000 0% 0% no-repeat padding-box;
+    color: #FFFFFF;
 }
 
 .guess-letter-underline {
@@ -46,37 +57,42 @@ body {
 #lobby {
     padding: 5px;
     display: grid;
-    grid-template-columns: 15rem auto 18rem;
-    grid-template-rows: min-content auto auto min-content;
-    grid-gap: 5px;
+    grid-template-columns: 15vw 50vw 20vw;
+    grid-template-rows: 8vh auto;
+    grid-column-gap: 20px;
+    grid-template-areas:
+    "timeBox timeBox timeBox"
+    "player-container drawing-board-wrapper video-grid";
+
 }
 
-
+.timeBox{
+    display: flex;
+    align-items: flex-end;
+    grid-area: timeBox;
+}
 /*
  * These two ensure that the drawing board has an aspect ratio of 16/9.
  * Technically we could make this configurable by setting the padding via JS.
  */
 #drawing-board-wrapper {
+    grid-area: drawing-board-wrapper;
     width: 100%;
     height: 0;
     padding-bottom: 56.25%;
     position: relative;
-    background-color: red;
+
 }
 
 #drawing-board-inner-wrapper {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+
 }
 
 #drawing-board {
-    position: absolute;
+   position: absolute;
     background-color: white;
     width: 100%;
-    height: 100%;
+    height: 50vh;
 }
 
 #center-dialog {
@@ -114,7 +130,6 @@ body {
     grid-row-start: 2;
     grid-row-end: 4;
 }
-
 #message-container {
     padding: 5px;
     overflow-y: scroll;
@@ -122,9 +137,6 @@ body {
     background-color: white;
 }
 
-#word-container {
-    justify-items: center;
-}
 
 .chat-name {
     font-weight: bold;
@@ -136,22 +148,6 @@ body {
 
 .non-guessing-player-message {
     color: rgb(38, 187, 38);
-}
-
-.message-input-form {
-    display: flex;
-}
-
-#message-input {
-    flex: 1;
-    border: 0;
-    border-top: 3px solid black;
-    padding: 5px;
-}
-
-#message-input:focus {
-    outline: none;
-    background-color: rgb(250, 232, 235);
 }
 
 .dialog-title {
@@ -234,7 +230,7 @@ body {
     background-color: rgb(218, 218, 218);
     height: 50px;
     width: 50px;
-    padding: 0px;
+    padding: 0;
 }
 
 @-moz-document url-prefix() {
@@ -296,13 +292,41 @@ body {
 }
 
 #toolbox {
-    grid-column-start: 2;
-    grid-column-end: 3;
-    display: flex;
+    /*grid-column-start: 2;
+    grid-column-end: 3;*/
+    display: none;
     flex-direction: row;
     flex-wrap: wrap;
 }
+.guess-input{
+    position: relative;
+    top:52vh;
+    width: 20vw;
+    height: 8vh;
+    display: flex;
+    flex-direction: column;
+}
+.guess-input .guess-title{
+    text-align: left;
+    font-weight: bold;
+}
+.message-input-form {
+    margin-top: 5px;
+    display: flex;
+    height:100%;
+}
 
+#message-input {
+    background: #FFFFFF 0% 0% no-repeat padding-box;
+    box-shadow: 0px 3px 4px #00000029;
+    border: 1px solid #363636;
+    border-radius: 8px;
+}
+
+#message-input:focus {
+    outline: none;
+    background-color: rgb(250, 232, 235);
+}
 .toolbox-group {
     margin-bottom: 10px;
     margin-right: 10px;
@@ -314,4 +338,25 @@ body {
 
 .pencil-sizes-container {
     display: flex;
+}
+.video-grid{
+    /* border: antiquewhite 2px solid; */
+    grid-area: video-grid;
+    padding: 0%;
+    margin: 0;
+    width: 100%;
+    display: grid;
+    grid-template-rows: 9vw 9vw 9vw 9vw;
+    grid-template-columns: 9vw 9vw;
+    grid-gap: 5px;
+    /* flex-wrap: wrap; */
+
+}
+#local_stream{
+    width: 100%;
+    height:  100%;
+}
+.video-placeholder{
+    width:  100%;
+    height:  100%;
 }
