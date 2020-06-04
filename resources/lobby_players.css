@@ -1,6 +1,7 @@
 #player-container {
-    grid-area: player-container;
-    display: grid;
+    /*grid-area: player-container;*/
+    display: none;
+    grid-area: 2 / 1/ 3 / 2;
     grid-template-rows: 8vh 7vh 7vh 7vh 7vh 7vh 7vh 7vh 7vh 7vh;
 }
 .playerBox{
