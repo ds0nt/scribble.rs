@@ -20,7 +20,7 @@ func main() {
 	//Setting the seed in order for the petnames to be random.
 	rand.Seed(time.Now().UnixNano())
 
-	log.Println("Started")
+	log.Println("Started on http://localhost:8080/")
 
 	//If this ever fails, it will return and print a fatal logger message
 	log.Fatal(communication.Serve(*portHTTP))

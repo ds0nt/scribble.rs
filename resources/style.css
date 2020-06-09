@@ -159,3 +159,7 @@ header {
     border-bottom: 1rem solid black;
     padding: 10px;
 }
+.mainBox{
+    display: flex;
+    flex-direction: column;
+}

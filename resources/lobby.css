@@ -1,5 +1,10 @@
+:root {
+    --color: #000000;
+}
+
 body {
     background-color: #EEF7EF;
+
 }
 
 .noscript {
@@ -10,22 +15,41 @@ body {
     border-bottom: 1rem solid black;
     padding: 10px;
 }
-
-#top-left-cell {
-    display: flex;
-}
-
 #rounds {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.7rem;
-    flex: 1;
+    text-align: center;
+    background: #707070 0% 0% no-repeat padding-box;
+    border: 1px solid #707070;
+    letter-spacing: 0;
+    color: #FFFFFF;
+
 }
 
 #time-left {
-    font-size: 1.5rem;
+    font: Bold 36px/43px Roboto;
+    margin-left: 67vw;
+    font-size: 5vh;
 }
-
+#time-left svg{
+    width: 5vh;
+    height: 5vh;
+    margin-bottom: -.5vh;
+}
+#time-left span{
+    display: inline;
+    line-height: 6vh;
+}
 #word-container {
-    text-align: center;
+    height: 8vh;
+    display: flex;
+    font: Bold 36px/43px Roboto;
+    justify-content: space-around;
+    align-items: center;
+    background: #000000 0% 0% no-repeat padding-box;
+    color: #FFFFFF;
 }
 
 .guess-letter-underline {
@@ -46,37 +70,44 @@ body {
 #lobby {
     padding: 5px;
     display: grid;
-    grid-template-columns: 15rem auto 18rem;
-    grid-template-rows: min-content auto auto min-content;
-    grid-gap: 5px;
+    grid-template-columns: 15vw 60vw 20vw;
+    grid-template-rows: 8vh auto;
+    grid-column-gap: 1vw;
+    margin: 0 1vw;
+    grid-template-areas:
+    "timeBox timeBox timeBox"
+ /*   "player-container drawing-board-wrapper video-grid";
+*/
 }
 
+.timeBox{
 
+    display: flex;
+    align-items: flex-end;
+    grid-area: timeBox;
+}
 /*
  * These two ensure that the drawing board has an aspect ratio of 16/9.
  * Technically we could make this configurable by setting the padding via JS.
  */
 #drawing-board-wrapper {
+    grid-area: 2/2/3/3;
     width: 100%;
     height: 0;
     padding-bottom: 56.25%;
     position: relative;
-    background-color: red;
+
 }
 
 #drawing-board-inner-wrapper {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+
 }
 
 #drawing-board {
-    position: absolute;
+   position: absolute;
     background-color: white;
     width: 100%;
-    height: 100%;
+    height: 50vh;
 }
 
 #center-dialog {
@@ -114,7 +145,6 @@ body {
     grid-row-start: 2;
     grid-row-end: 4;
 }
-
 #message-container {
     padding: 5px;
     overflow-y: scroll;
@@ -122,9 +152,6 @@ body {
     background-color: white;
 }
 
-#word-container {
-    justify-items: center;
-}
 
 .chat-name {
     font-weight: bold;
@@ -136,22 +163,6 @@ body {
 
 .non-guessing-player-message {
     color: rgb(38, 187, 38);
-}
-
-.message-input-form {
-    display: flex;
-}
-
-#message-input {
-    flex: 1;
-    border: 0;
-    border-top: 3px solid black;
-    padding: 5px;
-}
-
-#message-input:focus {
-    outline: none;
-    background-color: rgb(250, 232, 235);
 }
 
 .dialog-title {
@@ -229,15 +240,15 @@ body {
     background-color: rgb(243, 132, 247);
 }
 
-#color-picker {
+/*#color-picker {
     border: 0;
     background-color: rgb(218, 218, 218);
     height: 50px;
     width: 50px;
-    padding: 0px;
-}
+    padding: 0;
+}*/
 
-@-moz-document url-prefix() {
+/*@-moz-document url-prefix() {
     #color-picker {
         padding: 5px;
     }
@@ -249,7 +260,7 @@ body {
 
 #color-picker:active {
     background-color: rgb(243, 132, 247);
-}
+}*/
 
 .canvas-button {
     height: 50px;
@@ -295,14 +306,35 @@ body {
     color: red;
 }
 
-#toolbox {
-    grid-column-start: 2;
-    grid-column-end: 3;
+.guess-input{
+    position: relative;
+    top:52vh;
+    width: 20vw;
+    height: 8vh;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
+}
+.guess-input .guess-title{
+    text-align: left;
+    font-weight: bold;
+}
+.message-input-form {
+    margin-top: 5px;
+    display: flex;
+    height:100%;
 }
 
+/*#message-input {
+    background: #FFFFFF 0% 0% no-repeat padding-box;
+    box-shadow: 0px 3px 4px #00000029;
+    border: 1px solid #363636;
+    border-radius: 8px;
+}
+
+#message-input:focus {
+    outline: none;
+    background-color: rgb(250, 232, 235);
+}*/
 .toolbox-group {
     margin-bottom: 10px;
     margin-right: 10px;
@@ -314,4 +346,165 @@ body {
 
 .pencil-sizes-container {
     display: flex;
+}
+.video-grid{
+    /* border: antiquewhite 2px solid; */
+   grid-area:2/3/3/4;
+    padding: 0%;
+    margin: 0;
+    width: 100%;
+    display: grid;
+    grid-template-rows: 9vw 9vw 9vw 9vw;
+    grid-template-columns: 9vw 9vw;
+    grid-gap: 5px;
+    /* flex-wrap: wrap; */
+
+}
+#local_stream{
+    width: 100%;
+    height:  100%;
+}
+.video-placeholder{
+    width:  100%;
+    height:  100%;
+}
+#cc-toolbox{
+    grid-area: 2 / 1/ 3 / 2;
+    display: grid;
+    grid-template-rows: 63vh 10vh;
+    gap: 2vh;
+}
+#cc-toolbox .big-group{
+
+    display: grid;
+    grid: 11vh 30vh 11vh/7vw 7vw;
+    grid-gap: 2vh 2vh;
+    background-color: white;
+    border: 1px solid black;
+}
+
+.color-button-group{
+    display: grid;
+    grid:5vh 5vh 5vh 5vh 5vh 5vh/5vh 5vh;
+    gap: .5vh;
+
+}
+.color-button{
+    border: 1px solid black;
+    width: 100%;
+    height: 100%;
+}
+#cc-toolbox .small-group{
+    background-color: white;
+    border: black 1px solid;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+
+}
+.small-group svg{
+    width:5vh;
+    height: 5vh;
+}
+.show-color{
+    margin: 2vh 0;
+    border: none;
+    outline: none;
+    padding: 0;
+    background-color: white;
+    width: 11vh;
+    height: 11vh;
+}
+
+.draw{
+    display: flex;
+    flex-direction: column;
+    margin: 2vh;
+    padding: 0;
+    width: 11vh;
+    height: 11vh;
+}
+.draw svg{
+    fill:var(--color);
+}
+.erase{
+    display: flex;
+    flex-direction: column;
+    margin:2vh 0;
+    padding: 0;
+    width: 11vh;
+    height: 11vh;
+    box-sizing: border-box;
+}
+.fill{
+    display: flex;
+    flex-direction: column;
+    margin: 2vh;
+    width: 11vh;
+    height: 11vh;
+    box-sizing: border-box;
+}
+.clear,.undo{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: inherit;
+}
+
+#cc-toolbox p{
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    font-size: 1rem;
+    color: #000000;
+    font-weight: bold;
+}
+
+.active{
+    box-sizing: border-box;
+    border: 3px solid #CC362E;
+}
+
+.brush-group{
+    width: 11vh;
+    height: 32.5vh;
+    margin:0 2vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+
+.small-circle{
+    width: 3vh;
+    height: 3vh;
+    border-radius: 1.5vh;
+    background-color: var(--color);
+    box-shadow: inset 0 0 0 2px white;
+}
+.medium-circle{
+    width: 4.5vh;
+    height: 4.5vh;
+    border-radius: 2.25vh;
+    background-color: var(--color);
+    box-shadow: inset 0 0 0 2px white;
+}
+.huge-circle{
+    width: 6vh;
+    height: 6vh;
+    border-radius: 3vh;
+    background-color: var(--color);
+    box-shadow: inset 0 0 0 2px white;
+}
+.brush-size{
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    font-size: 1.5rem;
+    color: #000000;
+    font-weight: bold;
 }

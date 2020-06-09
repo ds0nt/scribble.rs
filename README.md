@@ -65,6 +65,12 @@ There are many ways you can contribute:
 * Tell your friends about the project
 * Curating the word lists
 
+## Connected Canadians setups
+1. Install go
+1. Install CompileDaemon `go get github.com/githubnemo/CompileDaemon`
+1. `./run.sh`
+1. When you make changes to any file, refresh your browser tab http://localhost:8080/
+
 ## Credits
 
 * Favicon - [Fredy Sujono](https://www.iconfinder.com/freud)
