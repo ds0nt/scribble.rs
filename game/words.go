@@ -13,8 +13,7 @@ var (
 	wordListCache = make(map[string][]string)
 	languageMap   = map[string]string{
 		"english": "words_en",
-		"italian": "words_it",
-		"german":  "words_de",
+		"french": "words_fr",
 	}
 )
 
