@@ -33,7 +33,7 @@
     </div>
     <div id="player-container">
        <div id="rounds"></div>
-           <div class="playerBox self">
+           <!-- <div class="playerBox self">
                <img src="../resources/image/avatar_hannah.png" alt="">
                <div class="playerName self">dora</div>
                <div class="playerScore">0</div>
@@ -42,7 +42,7 @@
             <img src="../resources/image/avatar_phillip.png" alt="">
             <div class="playerName self">james</div>
             <div class="playerScore">0</div>
-        </div>
+        </div> -->
 
        </div>
     <div id="drawing-board-wrapper">
@@ -436,6 +436,8 @@
         } else if (parsed.type === "clear-drawing-board") {
             clear(context)
         } else if (parsed.type === "next-turn") {
+            $("#cc-toolbox").css({'transform':'translateX(-150%)'});
+            $("#player-container").css({'transform':'translateX(0)'});
             //If a player doesn't choose, the dialog will still be up.
             wordDialog.style.visibility = "hidden";
             playWav('/resources/end-turn.wav');
@@ -464,7 +466,8 @@
         wordButtonZero.textContent = wordOne;
         wordButtonOne.textContent = wordTwo;
         wordButtonTwo.textContent = wordThree;
-        wordDialog.style.visibility = "visible";
+        //wordDialog.style.visibility = "visible";
+        show("#word-dialog");
     }
 
     function playWav(file) {
@@ -496,8 +499,13 @@
                         </div>`;
     }
 
+    // <div class="playerBox">
+    //         <img src="../resources/image/avatar_phillip.png" alt="">
+    //         <div class="playerName self">james</div>
+    //         <div class="playerScore">0</div>
+    //     </div> 
     function applyPlayers(players) {
-        //playerContainer.innerHTML = "";
+        playerContainer.innerHTML = "";
         players.forEach(function (player) {
             //We don't wanna show the disconnected players.
             if (!player.connected) {
@@ -510,22 +518,19 @@
             } else {
                 stateStyleClass = '';
             }
-            let newPlayerElement = '<div class="player ' + stateStyleClass + '">' +
-                '<span class="rank">' + player.rank + '</span>' +
-                '<div class="name-and-buttons">' +
+            let newPlayerElement = '<div class="playerBox">' +
+                ' <img src="../resources/image/avatar_phillip.png" alt="">' +
                 '<span class="playername';
-            if (player.id === ownID) {
-                newPlayerElement += ' playername-self';
-            }
+            //Tas: not sure if we need to add this
+                // if (player.id === ownID) {
+            //     newPlayerElement += ' playername-self';
+            // }
             newPlayerElement += '">' + player.name + '</span>';
             if (player.id !== ownID) {
                 newPlayerElement +=
                     '<button class="kick-button" id="kick-button" type="button" title="Vote to kick this player" alt="Vote to kick this player" onclick="onClickKickButton(' + player.id + ')">👋</button>';
             }
             newPlayerElement +=
-                '</div>' +
-                '<div class="score-and-status">' +
-                '<div>' +
                 '<span class="playerscore">' + player.score + '</span>' +
                 '<span class="last-turn-score">(Last turn: ' + player.lastScore + ')</span>' +
                 '</div>';
@@ -534,7 +539,7 @@
             } else if (player.state === 2) {
                 newPlayerElement += '<span>✔️</span>';
             }
-            newPlayerElement += '</div></div>';
+            newPlayerElement += '</div></div></div>';
             let newPlayer = document.createRange().createContextualFragment(newPlayerElement);
             console.log(newPlayer);
             playerContainer.appendChild(newPlayer);
