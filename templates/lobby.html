@@ -31,20 +31,8 @@
              <span>10</span>
         </span>
     </div>
-    <div id="player-container">
-       <div id="rounds"></div>
-           <!-- <div class="playerBox self">
-               <img src="../resources/image/avatar_hannah.png" alt="">
-               <div class="playerName self">dora</div>
-               <div class="playerScore">0</div>
-           </div>
-        <div class="playerBox">
-            <img src="../resources/image/avatar_phillip.png" alt="">
-            <div class="playerName self">james</div>
-            <div class="playerScore">0</div>
-        </div> -->
-
-       </div>
+    <div id="player-container"></div>
+    <div id="rounds"></div>
     <div id="drawing-board-wrapper">
            <div id="word-container">
                <span class="guess-letter guess-letter-underline">Welcome</span>
@@ -491,6 +479,11 @@
     }, 500);
 
     function applyMessage(styleClass, author, message) {
+        console.log(message);
+        if(message === "Game over. Type !start again to start a new round."){
+            show("#score-dialog");
+            return;
+        }
         if (messageContainer.childElementCount >= 100) {
             messageContainer.removeChild(messageContainer.firstChild)
         }
@@ -522,18 +515,18 @@
             }
             let newPlayerElement = '<div class="playerBox">' +
                 ' <img src="../resources/image/avatar_phillip.png" alt="">' +
-                '<span class="playername';
+                '<div class="name';
             //Tas: not sure if we need to add this
                 // if (player.id === ownID) {
             //     newPlayerElement += ' playername-self';
             // }
-            newPlayerElement += '">' + player.name + '</span>';
+            newPlayerElement += '">' + player.name + '</div>';
             if (player.id !== ownID) {
                 newPlayerElement +=
                     '<button class="kick-button" id="kick-button" type="button" title="Vote to kick this player" alt="Vote to kick this player" onclick="onClickKickButton(' + player.id + ')">👋</button>';
             }
             newPlayerElement +=
-                '<span class="playerscore">' + player.score + '</span>' +
+                '<span class="score">' + player.score + '</span>' +
                 '<span class="last-turn-score">(Last turn: ' + player.lastScore + ')</span>' +
                 '</div>';
             if (player.state === 1) {
