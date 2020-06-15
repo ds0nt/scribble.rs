@@ -370,7 +370,7 @@
         }));
         allowDrawing = true;
         hide("#word-dialog");
-        wordDialog.style.visibility = "hidden";
+        wordDialog.style.display = "none";
         $("#cc-toolbox").css({'transform':'translateX(0)'});
         $("#player-container").css({'transform':'translateX(-150%)'});
     }
@@ -400,7 +400,7 @@
 
             if (ready.round === 0 && ownerID === ownID) {
                 show("#start-dialog")
-                //startDialog.style.visibility = "visible";
+                startDialog.style.display = "block";
             }
 
             if (ready.players && ready.players.length) {
@@ -439,7 +439,7 @@
             $("#cc-toolbox").css({'transform':'translateX(-150%)'});
             $("#player-container").css({'transform':'translateX(0)'});
             //If a player doesn't choose, the dialog will still be up.
-            wordDialog.style.visibility = "hidden";
+            wordDialog.style.display = "none";
             playWav('/resources/end-turn.wav');
 
             clear(context);
@@ -454,8 +454,10 @@
             allowDrawing = false;
         } else if (parsed.type === "your-turn") {
             playWav('/resources/your-turn.wav');
-
             promptWords(parsed.data[0], parsed.data[1], parsed.data[2]);
+            show("#word-dialog")
+            $("#cc-toolbox").css({'transform':'translateX(0)'});
+            $("#player-container").css({'transform':'translateX(-150%)'});   
         }
     };
 
@@ -466,8 +468,8 @@
         wordButtonZero.textContent = wordOne;
         wordButtonOne.textContent = wordTwo;
         wordButtonTwo.textContent = wordThree;
-        //wordDialog.style.visibility = "visible";
-        show("#word-dialog");
+        wordDialog.style.display = "block";
+        //show("#word-dialog");
     }
 
     function playWav(file) {
