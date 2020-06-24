@@ -36,8 +36,7 @@ var (
 	}
 	SupportedLanguages = map[string]string{
 		"english": "English",
-		"italian": "Italian",
-		"german":  "German",
+		"french": "French",
 	}
 )
 
