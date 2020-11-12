@@ -4,32 +4,9 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"sync"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
-)
-
-var (
-	lobbies   []*Lobby
-	lobbiesMu = &sync.Mutex{}
-)
-
-var (
-	LobbySettingBounds = &SettingBounds{
-		MinDrawingTime:       60,
-		MaxDrawingTime:       300,
-		MinRounds:            1,
-		MaxRounds:            20,
-		MinMaxPlayers:        2,
-		MaxMaxPlayers:        24,
-		MinClientsPerIPLimit: 1,
-		MaxClientsPerIPLimit: 24,
-	}
-	SupportedLanguages = map[string]string{
-		"english": "English",
-		"french":  "French",
-	}
 )
 
 // Lobby represents a game session.
@@ -137,29 +114,32 @@ func RemoveLobby(id string) {
 		lobbies = append(lobbies[:indexToDelete], lobbies[indexToDelete+1:]...)
 	}
 }
-func createLobby(
-	drawingTime int,
-	rounds int,
-	maxPlayers int,
-	customWords []string,
-	customWordsChance int,
-	clientsPerIPLimit int,
-	enableVotekick bool) *Lobby {
 
+type CreateLobbyParams struct {
+	DrawingTime       int
+	Rounds            int
+	MaxPlayers        int
+	CustomWords       []string
+	CustomWordsChance int
+	ClientsPerIPLimit int
+	EnableVotekick    bool
+}
+
+func createLobby(params CreateLobbyParams) *Lobby {
 	lobby := &Lobby{
 		ID:                  uuid.NewV4().String(),
-		DrawingTime:         drawingTime,
-		MaxRounds:           rounds,
-		MaxPlayers:          maxPlayers,
-		CustomWords:         customWords,
-		CustomWordsChance:   customWordsChance,
+		DrawingTime:         params.DrawingTime,
+		MaxRounds:           params.Rounds,
+		MaxPlayers:          params.MaxPlayers,
+		CustomWords:         params.CustomWords,
+		CustomWordsChance:   params.CustomWordsChance,
 		timeLeftTickerReset: make(chan struct{}),
-		ClientsPerIPLimit:   clientsPerIPLimit,
-		EnableVotekick:      enableVotekick,
+		ClientsPerIPLimit:   params.ClientsPerIPLimit,
+		EnableVotekick:      params.EnableVotekick,
 		CurrentDrawing:      make([]interface{}, 0, 0),
 	}
 
-	if len(customWords) > 1 {
+	if len(params.CustomWords) > 1 {
 		rand.Shuffle(len(lobby.CustomWords), func(i, j int) {
 			lobby.CustomWords[i], lobby.CustomWords[j] = lobby.CustomWords[j], lobby.CustomWords[i]
 		})
@@ -182,11 +162,11 @@ func (lobby *Lobby) HasConnectedPlayers() bool {
 	return false
 }
 
-// CreateLobby allows creating a lobby, optionally returning errors that
+// NewLobby allows creating a lobby, optionally returning errors that
 // occured during creation.
-func CreateLobby(playerName, language string, drawingTime, rounds, maxPlayers, customWordChance, clientsPerIPLimit int, customWords []string, enableVotekick bool) (string, *Lobby, error) {
-	lobby := createLobby(drawingTime, rounds, maxPlayers, customWords, customWordChance, clientsPerIPLimit, enableVotekick)
-	player := createPlayer(playerName)
+func NewLobby(playerName, language string, params CreateLobbyParams) (string, *Lobby, error) {
+	lobby := createLobby(params)
+	player := NewPlayer(playerName)
 
 	lobby.Players = append(lobby.Players, player)
 	lobby.Owner = player
@@ -216,7 +196,7 @@ type SettingBounds struct {
 	MaxClientsPerIPLimit int64
 }
 
-// LineEvent is basically the same as GameEvent, but with a specific Data type.
+// LineEvent is basically the same as LobbyEvent, but with a specific Data type.
 // We use this for reparsing as soon as we know that the type is right. It's
 // a bit unperformant, but will do for now.
 type LineEvent struct {
@@ -224,7 +204,7 @@ type LineEvent struct {
 	Data *Line  `json:"data"`
 }
 
-// LineEvent is basically the same as GameEvent, but with a specific Data type.
+// LineEvent is basically the same as LobbyEvent, but with a specific Data type.
 // We use this for reparsing as soon as we know that the type is right. It's
 // a bit unperformant, but will do for now.
 type FillEvent struct {
@@ -345,7 +325,7 @@ func advanceLobby(lobby *Lobby) {
 		RoundEndTime: lobby.RoundEndTime,
 	}, lobby)
 
-	WriteAsJSON(lobby.Drawer, &GameEvent{Type: "your-turn", Data: lobby.WordChoice})
+	WriteAsJSON(lobby.Drawer, &LobbyEvent{Type: "your-turn", Data: lobby.WordChoice})
 }
 
 func selectNextDrawer(lobby *Lobby) {
@@ -455,7 +435,7 @@ func (lobby *Lobby) GetAvailableWordHints(player *Player) []*WordHint {
 }
 
 func (lobby *Lobby) JoinPlayer(playerName string) string {
-	player := createPlayer(playerName)
+	player := NewPlayer(playerName)
 
 	//FIXME Make a dedicated method that uses a mutex?
 	lobby.Players = append(lobby.Players, player)

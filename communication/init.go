@@ -3,7 +3,6 @@ package communication
 import (
 	"html/template"
 	"io/ioutil"
-	"net/http"
 
 	"github.com/markbates/pkger"
 )
@@ -49,23 +48,6 @@ func init() {
 		panic(parseError)
 	}
 
-	setupRoutes()
-}
-
-func setupRoutes() {
-	//Endpoints for official webclient
-	http.Handle("/resources/", http.StripPrefix("/resources/", http.FileServer(pkger.Dir("/resources"))))
-	http.HandleFunc("/", homePage)
-	http.HandleFunc("/ssrEnterLobby", ssrEnterLobby)
-	http.HandleFunc("/ssrCreateLobby", ssrCreateLobby)
-
-	//The websocket is shared between the public API and the official client
-	http.HandleFunc("/v1/ws", wsEndpoint)
-
-	//These exist only for the public API. We version them in order to ensure
-	//backwards compatibility as far as possible.
-	http.HandleFunc("/v1/lobby", createLobby)
-	http.HandleFunc("/v1/lobby/player", enterLobby)
 }
 
 func readTemplateFile(name string) string {

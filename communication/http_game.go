@@ -10,7 +10,7 @@ import (
 	"github.com/scribble-rs/scribble.rs/game"
 )
 
-func getLobby(r *http.Request) (*game.Lobby, error) {
+func getLobbyHandler(r *http.Request) (*game.Lobby, error) {
 	lobbyID := r.URL.Query().Get("lobby_id")
 	if lobbyID == "" {
 		return nil, errors.New("the requested lobby doesn't exist")
@@ -25,7 +25,7 @@ func getLobby(r *http.Request) (*game.Lobby, error) {
 	return lobby, nil
 }
 
-func getUserSession(r *http.Request) string {
+func userSession(r *http.Request) string {
 	sessionCookie, noCookieError := r.Cookie("usersession")
 	if noCookieError == nil && sessionCookie.Value != "" {
 		return sessionCookie.Value
@@ -40,10 +40,10 @@ func getUserSession(r *http.Request) string {
 }
 
 func getPlayer(lobby *game.Lobby, r *http.Request) *game.Player {
-	return lobby.GetPlayer(getUserSession(r))
+	return lobby.GetPlayer(userSession(r))
 }
 
-func getPlayername(r *http.Request) string {
+func getPlayernameHandler(r *http.Request) string {
 	usernameCookie, noCookieError := r.Cookie("username")
 	if noCookieError == nil {
 		username := html.EscapeString(strings.TrimSpace(usernameCookie.Value))
@@ -71,9 +71,9 @@ func trimDownTo(text string, size int) string {
 	return text[:size]
 }
 
-// GetPlayers returns divs for all players in the lobby to the calling client.
-func GetPlayers(w http.ResponseWriter, r *http.Request) {
-	lobby, err := getLobby(r)
+// getPlayersHandler returns divs for all players in the lobby to the calling client.
+func getPlayersHandler(w http.ResponseWriter, r *http.Request) {
+	lobby, err := getLobbyHandler(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -91,9 +91,9 @@ func GetPlayers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//GetRounds returns the html structure and data for the current round info.
-func GetRounds(w http.ResponseWriter, r *http.Request) {
-	lobby, err := getLobby(r)
+//getRoundsHandler returns the html structure and data for the current round info.
+func getRoundsHandler(w http.ResponseWriter, r *http.Request) {
+	lobby, err := getLobbyHandler(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -111,9 +111,9 @@ func GetRounds(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetWordHint returns the html structure and data for the current word hint.
-func GetWordHint(w http.ResponseWriter, r *http.Request) {
-	lobby, err := getLobby(r)
+// getWordHintHandler returns the html structure and data for the current word hint.
+func getWordHintHandler(w http.ResponseWriter, r *http.Request) {
+	lobby, err := getLobbyHandler(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -145,9 +145,9 @@ type LobbyData struct {
 	DrawingBoardBaseHeight int    `json:"drawingBoardBaseHeight"`
 }
 
-// ssrEnterLobby opens a lobby, either opening it directly or asking for a lobby.
-func ssrEnterLobby(w http.ResponseWriter, r *http.Request) {
-	lobby, err := getLobby(r)
+// ssrEnterLobbyHandler opens a lobby, either opening it directly or asking for a lobby.
+func ssrEnterLobbyHandler(w http.ResponseWriter, r *http.Request) {
+	lobby, err := getLobbyHandler(r)
 	if err != nil {
 		userFacingError(w, err.Error())
 		return
@@ -195,7 +195,7 @@ func ssrEnterLobby(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var playerName = getPlayername(r)
+		var playerName = getPlayernameHandler(r)
 		userSession := lobby.JoinPlayer(playerName)
 
 		// Use the players generated usersession and pass it as a cookie.

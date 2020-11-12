@@ -35,7 +35,7 @@ func init() {
 }
 
 func wsEndpoint(w http.ResponseWriter, r *http.Request) {
-	lobby, err := getLobby(r)
+	lobby, err := getLobbyHandler(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -43,7 +43,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	//This issue can happen if you illegally request a websocket connection without ever having had
 	//a usersession or your client having deleted the usersession cookie.
-	sessionCookie := getUserSession(r)
+	sessionCookie := userSession(r)
 	if sessionCookie == "" {
 		http.Error(w, "you don't have access to this lobby;usersession not set", http.StatusUnauthorized)
 		return
@@ -85,9 +85,7 @@ func wsListen(lobby *game.Lobby, player *game.Player, socket *websocket.Conn) {
 	}()
 
 	for {
-		msg := &jsEvent{}
-
-		err := socket.ReadJSON(msg)
+		_, bytes, err := socket.ReadMessage()
 		if err != nil {
 			if websocket.IsCloseError(err) ||
 				websocket.IsUnexpectedCloseError(err) ||
@@ -107,12 +105,8 @@ func wsListen(lobby *game.Lobby, player *game.Player, socket *websocket.Conn) {
 
 			continue
 		}
-		gameEvent := &game.LobbyEvent{
-			Type: msg.Type,
-			Data: msg.Data,
-		}
 
-		err = game.HandleEvent(gameEvent, lobby, player)
+		err = lobby.HandleEvent(bytes, player)
 		if err != nil {
 			log.Printf("Error handling event: %s\n", err)
 		}

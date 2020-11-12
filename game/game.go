@@ -1,12 +1,12 @@
 package game
 
 import (
-	"encoding/json"
 	"fmt"
 	"html"
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	commands "github.com/Bios-Marcel/cmdp"
@@ -15,102 +15,27 @@ import (
 	petname "github.com/dustinkirkland/golang-petname"
 )
 
-// LobbyEvent contains an eventtype and optionally any data.
-type LobbyEvent struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data"`
-}
+var (
+	lobbies   []*Lobby
+	lobbiesMu = &sync.Mutex{}
+)
 
-func (l *Lobby) HandleEvent(ev *LobbyEvent, player *Player) error {
-	if ev.Type == "message" {
-		text, ok := (ev.Data).(string)
-		if !ok {
-			return fmt.Errorf("message event data required but not recieved: '%s'", ev.Data)
-		}
-
-		if strings.HasPrefix(text, "!") {
-			handleCommand(text[1:], player, l)
-		} else {
-			handleMessage(text, player, l)
-		}
-	} else if ev.Type == "line" {
-		if l.canDraw(player) {
-			line := &Line{}
-			err := json.Unmarshal(ev.Data, line)
-			if err != nil {
-				return fmt.Errorf("error decoding line data: %s", err)
-			}
-			l.AppendLine(&LineEvent{Type: ev.Type, Data: line})
-
-			//We directly forward the event, as it seems to be valid.
-			SendDataToConnectedPlayers(player, l, ev)
-		}
-	} else if ev.Type == "fill" {
-		if l.canDraw(player) {
-			fill := &Fill{}
-			err := json.Unmarshal(ev.Data, fill)
-			if err != nil {
-				return fmt.Errorf("error decoding fill data: %s", err)
-			}
-			l.AppendFill(&LineEvent{Type: ev.Type, Data: line})
-			l.AppendFill(fill)
-
-			//We directly forward the event, as it seems to be valid.
-			SendDataToConnectedPlayers(player, l, ev)
-		}
-	} else if ev.Type == "clear-drawing-board" {
-		if l.canDraw(player) {
-			l.ClearDrawing()
-			SendDataToConnectedPlayers(player, l, ev)
-		}
-	} else if ev.Type == "choose-word" {
-		chosenIndex, ok := (ev.Data).(int)
-		if !ok {
-			asFloat, isFloat32 := (ev.Data).(float64)
-			if isFloat32 && asFloat < 4 {
-				chosenIndex = int(asFloat)
-			} else {
-				fmt.Println("Invalid data")
-				return nil
-			}
-		}
-
-		drawer := l.Drawer
-		if player == drawer && len(l.WordChoice) > 0 && chosenIndex >= 0 && chosenIndex <= 2 {
-			l.CurrentWord = l.WordChoice[chosenIndex]
-			l.WordChoice = nil
-			l.WordHints = createWordHintFor(l.CurrentWord, false)
-			l.WordHintsShown = createWordHintFor(l.CurrentWord, true)
-			triggerWordHintUpdate(l)
-		}
-	} else if ev.Type == "kick-vote" {
-		toKickID, ok := (ev.Data).(string)
-		if !ok {
-			fmt.Println("Invalid data")
-			return nil
-		}
-		if !l.EnableVotekick {
-			// Votekicking is disabled in the lobby
-			// We tell the user and do not continue with the event
-			WriteAsJSON(player, LobbyEvent{Type: "system-message", Data: "Votekick is disabled in this lobby!"})
-		} else {
-			handleKickEvent(l, player, toKickID)
-		}
-	} else if ev.Type == "start" {
-		if l.Round == 0 && player == l.Owner {
-			for _, otherPlayer := range l.Players {
-				otherPlayer.Score = 0
-				otherPlayer.LastScore = 0
-			}
-
-			l.Round = 1
-
-			advanceLobby(l)
-		}
+var (
+	LobbySettingBounds = &SettingBounds{
+		MinDrawingTime:       60,
+		MaxDrawingTime:       300,
+		MinRounds:            1,
+		MaxRounds:            20,
+		MinMaxPlayers:        2,
+		MaxMaxPlayers:        24,
+		MinClientsPerIPLimit: 1,
+		MaxClientsPerIPLimit: 24,
 	}
-
-	return nil
-}
+	SupportedLanguages = map[string]string{
+		"english": "English",
+		"french":  "French",
+	}
+)
 
 func handleMessage(input string, sender *Player, lobby *Lobby) {
 	trimmed := strings.TrimSpace(input)

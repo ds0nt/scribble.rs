@@ -7,6 +7,16 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+// PlayerState is the game state for the player
+type PlayerState int
+
+// PlayerStates
+const (
+	PlayerStateGuessing PlayerState = iota
+	PlayerStateDrawing
+	PlayerStateStandby
+)
+
 // Player represents a participant in a Lobby.
 type Player struct {
 	// userSession uniquely identifies the player.
@@ -66,13 +76,3 @@ func (player *Player) SetWebsocket(socket *websocket.Conn) {
 func (player *Player) GetWebsocketMutex() *sync.Mutex {
 	return player.wsMu
 }
-
-// PlayerState is the game state for the player
-type PlayerState int
-
-// PlayerStates
-const (
-	PlayerStateGuessing PlayerState = iota
-	PlayerStateDrawing
-	PlayerStateStandby
-)
