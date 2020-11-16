@@ -1,8 +1,10 @@
 package game
 
 import (
+	"strings"
 	"sync"
 
+	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/gorilla/websocket"
 	uuid "github.com/satori/go.uuid"
 )
@@ -75,4 +77,14 @@ func (player *Player) SetWebsocket(socket *websocket.Conn) {
 // via the network.
 func (player *Player) GetWebsocketMutex() *sync.Mutex {
 	return player.wsMu
+}
+
+// GeneratePlayerName creates a new playername. A so called petname. It consists
+// of an adverb, an adjective and a animal name. The result can generally be
+// trusted to be sane.
+func GeneratePlayerName() string {
+	adjective := strings.Title(petname.Adjective())
+	adverb := strings.Title(petname.Adverb())
+	name := strings.Title(petname.Name())
+	return adverb + adjective + name
 }

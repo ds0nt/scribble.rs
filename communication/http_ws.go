@@ -64,22 +64,22 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	log.Println(player.Name + " has connected")
 
 	player.SetWebsocket(ws)
-	lobby.OnConnected(player)
+	lobby.Connect(player)
 
 	ws.SetCloseHandler(func(code int, text string) error {
-		game.OnDisconnected(lobby, player)
+		lobby.Disconnect(player)
 		return nil
 	})
 
 	go wsListen(lobby, player, ws)
 }
 
-func wsListen(lobby *game.Lobby, player *game.Player, socket *websocket.Conn) {
+func wsListen(l *game.Lobby, player *game.Player, socket *websocket.Conn) {
 	//Workaround to prevent crash
 	defer func() {
 		err := recover()
 		if err != nil {
-			game.OnDisconnected(lobby, player)
+			l.Disconnect(player)
 			log.Println("Error occurred in wsListen: ", err)
 		}
 	}()
@@ -92,7 +92,7 @@ func wsListen(lobby *game.Lobby, player *game.Player, socket *websocket.Conn) {
 				// This happens when the server closes the connection. It will cause 1000 retries followed by a panic.
 				strings.Contains(err.Error(), "use of closed network connection") {
 				// Make sure that the sockethandler is called
-				game.OnDisconnected(lobby, player)
+				l.Disconnect(player)
 				log.Println(player.Name + " disconnected.")
 				return
 			}
@@ -106,7 +106,7 @@ func wsListen(lobby *game.Lobby, player *game.Player, socket *websocket.Conn) {
 			continue
 		}
 
-		err = lobby.HandleEvent(bytes, player)
+		err = l.HandlePacket(bytes, player)
 		if err != nil {
 			log.Printf("Error handling event: %s\n", err)
 		}
@@ -114,6 +114,7 @@ func wsListen(lobby *game.Lobby, player *game.Player, socket *websocket.Conn) {
 	}
 }
 
+// TODO: correct this cross-package callback voodoo.
 func SendDataToOtherPlayers(sender *game.Player, lobby *game.Lobby, data interface{}) {
 	for _, player := range lobby.Players {
 		if player != sender {

@@ -8,7 +8,7 @@ import (
 	"github.com/markbates/pkger"
 )
 
-func setupRoutes() *http.ServeMux {
+func makeServeMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	//Endpoints for official webclient
 	mux.Handle("/resources/", http.StripPrefix("/resources/", http.FileServer(pkger.Dir("/resources"))))
@@ -28,8 +28,8 @@ func setupRoutes() *http.ServeMux {
 
 // Serve runs http server on the port
 func Serve(port int) error {
-	routes := setupRoutes()
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), routes)
+	mux := makeServeMux()
+	return http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
 }
 
 //userFacingError will return the occurred error as a custom html page to the caller.

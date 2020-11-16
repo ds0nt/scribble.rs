@@ -51,7 +51,7 @@ type CreatePageData struct {
 	Language          string
 }
 
-func parseCreateLobbyData(r *http.Request) (params game.CreateLobbyParams, language string, errs []string) {
+func parseCreateLobbyData(r *http.Request) (params game.NewLobbyParams, language string, errs []string) {
 	var err error
 	errs = []string{}
 
