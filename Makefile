@@ -1,6 +1,8 @@
 
 
 build:
+	rm -f pgked.go
+	go build -o scribblers
 	go run github.com/markbates/pkger/cmd/pkger -include /resources -include /templates; ./scribblers
 
 dockerize:
