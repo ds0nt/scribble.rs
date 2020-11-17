@@ -2,103 +2,145 @@ package store_test
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
+	"github.com/go-redis/redis"
+	"github.com/kr/pretty"
 	"github.com/scribble-rs/scribble.rs/game"
 	"github.com/stretchr/testify/require"
+	"github.com/vmihailenco/msgpack"
 )
 
-var testLobby = &game.Lobby{
-	ID: "test-id",
-	DrawingTime: 120,
-	MaxRounds: 3,
-	MaxPlayers: 6,
-	CustomWords: []string{},
-	Words:       []string{},
-
-	Players: []*Player{
-		&Player{},
-	},
-	Drawer: &Player{},
-	Owner: &Player{},
-
-	CurrentWord: "cyborg",
-	WordHints: []*WordHint{"not totally human"},
-	WordHintsShown: []*WordHint{"not totally human"},
-	// Round is the round that the Lobby is currently in. This is a number
-	// between 0 and MaxRounds. 0 indicates that it hasn't started yet.
-	Round: 0,
-	// WordChoice represents the current choice of words.
-	WordChoice: []string{
-		"cyborg", "bruce lee", "big mac",
-	},
-	// RoundEndTime represents the time at which the current round will end.
-	// This is a UTC unix-timestamp in milliseconds.
-	RoundEndTime: time.Now().Add(time.Second * 120).Unix(),
-
-	timeLeftTicker:        time.NewTicker(),
-	timeLeftTickerReset:   make(chan struct{}),
-	scoreEarnedByGuessers int
-	alreadyUsedWords      []string
-	CustomWordsChance     int
-	ClientsPerIPLimit     int
-	// CurrentDrawing represents the state of the current canvas. The elements
-	// consist of LineEvent and FillEvent. Please do not modify the contents
-	// of this array an only move AppendLine and AppendFill on the respective
-	// lobby object.
-	CurrentDrawing []interface{}
-	EnableVotekick bool
+type LobbyEntity struct {
+	Lobby game.Lobby
 }
 
-func requireLobbiesEqual(t *testing.T, expected, actual *game.Lobby) {
+func (m *LobbyEntity) MarshalBinary() ([]byte, error) {
+	return msgpack.Marshal(&m)
+}
+
+// https://github.com/go-redis/redis/issues/739
+func (m *LobbyEntity) UnmarshalBinary(data []byte) error {
+	return msgpack.Unmarshal(data, &m)
+}
+
+func NewTestLobby() *LobbyEntity {
+	return &LobbyEntity{
+		Lobby: game.Lobby{
+			ID:                "test-id",
+			DrawingTime:       120,
+			MaxRounds:         3,
+			MaxPlayers:        6,
+			CustomWords:       []string{},
+			Words:             []string{},
+			Players:           []*game.Player{&game.Player{}},
+			Drawer:            &game.Player{},
+			Owner:             &game.Player{},
+			CurrentWord:       "cyborg",
+			WordHints:         []*game.WordHint{&game.WordHint{}},
+			WordHintsShown:    []*game.WordHint{&game.WordHint{}},
+			Round:             0,
+			WordChoice:        []string{"cyborg", "bruce lee", "big mac"},
+			RoundEndTime:      time.Now().Add(time.Second * 120).Unix(),
+			CustomWordsChance: 0,
+			ClientsPerIPLimit: 2,
+			CurrentDrawing:    []interface{}{},
+			EnableVotekick:    true,
+
+			// timeLeftTicker:        time.NewTicker(),
+			// timeLeftTickerReset:   make(chan struct{}),
+			// scoreEarnedByGuessers: 0,
+			// alreadyUsedWords:      []string{},
+		},
+	}
+}
+
+func requireLobbiesEqual(t *testing.T, expected, actual *LobbyEntity) {
 	require.NotNil(t, expected)
 	require.NotNil(t, actual)
-	require.NotEmpty(t, expected.ID)
-	require.Equal(t, expected.ID, actual.ID)
-}
+	require.NotEmpty(t, expected.Lobby.ID)
+	require.Equal(t, expected.Lobby.ID, actual.Lobby.ID)
+	require.True(t, reflect.DeepEqual(expected.Lobby, actual.Lobby))
 
-func TestSaveLobby(t *testing.T) {
-	var st Store
-
-	st = NewMemStore()
-	require.NotNil(t, st)
-
-	err := st.Save(testLobby)
-	require.Nil(t, err)
-
-	l, err := st.FindByID(testLobby.ID)
-	require.Nil(t, err)
-
-	requireLobbiesEqual(t, l, testLobby)
 }
 
 type Store interface {
-	Save(l *game.Lobby) error
-	FindByID(id string) (*game.Lobby, error)
+	Save(l *LobbyEntity) error
+	FindByID(id string) (*LobbyEntity, error)
+}
+
+type RedisStore struct {
+	client *redis.Client
+}
+
+func NewRedisStore() *RedisStore {
+	client := redis.NewClient(&redis.Options{
+		Addr: "127.0.01:6379",
+	})
+	return &RedisStore{
+		client: client,
+	}
+}
+
+func (m *RedisStore) Save(l *LobbyEntity) error {
+	cmd := m.client.Set(l.Lobby.ID, l, 0)
+	text, err := cmd.Result()
+	fmt.Println("redis-store save:", text)
+
+	return err
+}
+
+func (m *RedisStore) FindByID(id string) (l *LobbyEntity, err error) {
+	l = &LobbyEntity{}
+	cmd := m.client.Get(id)
+	err = cmd.Scan(l)
+	pretty.Println("redis-store get:", id, l)
+	return
 }
 
 type MemStore struct {
-	lobbies map[string]*game.Lobby
+	lobbies map[string]*LobbyEntity
 }
 
 func NewMemStore() *MemStore {
 	return &MemStore{
-		lobbies: make(map[string]*game.Lobby),
+		lobbies: make(map[string]*LobbyEntity),
 	}
 }
 
-func (m *MemStore) Save(l *game.Lobby) error {
-	m.lobbies[l.ID] = l
+func (m *MemStore) Save(l *LobbyEntity) error {
+	m.lobbies[l.Lobby.ID] = l
 	return nil
 }
 
-func (m *MemStore) FindByID(id string) (l *game.Lobby, err error) {
+func (m *MemStore) FindByID(id string) (l *LobbyEntity, err error) {
 
 	l, ok := m.lobbies[id]
 	if !ok {
-		return nil, fmt.Errorf("lobby %s not found", l.ID)
+		return nil, fmt.Errorf("lobby %s not found", l.Lobby.ID)
 	}
 
 	return l, nil
+}
+
+func TestSaveLobby(t *testing.T) {
+	stores := []Store{
+		// NewMemStore(),
+		NewRedisStore(),
+	}
+
+	for _, st := range stores {
+		require.NotNil(t, st)
+
+		l := NewTestLobby()
+		err := st.Save(l)
+		require.Nil(t, err)
+
+		lobby, err := st.FindByID(l.Lobby.ID)
+		require.Nil(t, err)
+
+		requireLobbiesEqual(t, l, lobby)
+	}
 }
