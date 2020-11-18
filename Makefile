@@ -1,17 +1,21 @@
 
+# recompile game.js if node_modules or src changes
 resources/game.js: www/node_modules www/src/*
 	cd www && yarn install && npx spack 
 	cp -v www/dist/web.js resources/game.js
 
+# repackage if game.js .. or any other packaged stuff is modified
 pkged.go: resources/game.js ./resources/* ./templates/*
 	rm -f pgked.go
 	go run github.com/markbates/pkger/cmd/pkger -include /resources -include /templates;
 
+# delete built stuff
 clean:
 	rm -f pkged.go
 	rm -f scribblers
 	rm -f resources/game.js
 
+# build stuff depending and maybe pkged.go if it has changed
 build: pkged.go
 	go build -o scribblers
 	./scribblers
