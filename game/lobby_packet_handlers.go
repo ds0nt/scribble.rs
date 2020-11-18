@@ -57,22 +57,24 @@ func (l *Lobby) message(p *Packet, bytes []byte, from *Player) error {
 	}
 	return nil
 }
+
 func (l *Lobby) line(p *Packet, bytes []byte, from *Player) error {
-
-	if l.canDraw(from) {
-		line := &Line{}
-		err := json.Unmarshal(bytes, line)
-		if err != nil {
-			return fmt.Errorf("error decoding line data: %s", err)
-		}
-		l.AppendLine(&LineEvent{Type: p.Type, Data: line})
-
-		//We directly forward the event, as it seems to be valid.
-		SendDataToConnectedPlayers(from, l, p)
+	if !l.canDraw(from) {
+		return nil
 	}
-	return nil
+	line := &Line{}
+	err := json.Unmarshal(bytes, line)
+	if err != nil {
+		return fmt.Errorf("error decoding line data: %s", err)
+	}
+	l.AppendLine(&LineEvent{Type: p.Type, Data: line})
 
+	//We directly forward the event, as it seems to be valid.
+	SendDataToOtherPlayers(from, l, p)
+
+	return nil
 }
+
 func (l *Lobby) fill(p *Packet, bytes []byte, from *Player) error {
 
 	if l.canDraw(from) {
@@ -84,20 +86,20 @@ func (l *Lobby) fill(p *Packet, bytes []byte, from *Player) error {
 		l.AppendFill(&FillEvent{Type: p.Type, Data: fill})
 
 		//We directly forward the event, as it seems to be valid.
-		SendDataToConnectedPlayers(from, l, p)
+		SendDataToOtherPlayers(from, l, p)
 	}
 	return nil
 
 }
-func (l *Lobby) clearDrawingBoard(p *Packet, bytes []byte, from *Player) error {
 
+func (l *Lobby) clearDrawingBoard(p *Packet, bytes []byte, from *Player) error {
 	if l.canDraw(from) {
 		l.ClearDrawing()
-		SendDataToConnectedPlayers(from, l, p)
+		SendDataToOtherPlayers(from, l, p)
 	}
 	return nil
-
 }
+
 func (l *Lobby) chooseWord(p *Packet, bytes []byte, from *Player) error {
 
 	chosenIndex, ok := (p.Data).(int)
@@ -143,7 +145,6 @@ func createWordHintFor(word string, showAll bool) []*WordHint {
 }
 
 func (l *Lobby) kickVote(p *Packet, bytes []byte, from *Player) error {
-
 	toKickID, ok := (p.Data).(string)
 	if !ok {
 		fmt.Println("Invalid data")
@@ -156,9 +157,10 @@ func (l *Lobby) kickVote(p *Packet, bytes []byte, from *Player) error {
 	} else {
 		l.kick(from, toKickID)
 	}
-	return nil
 
+	return nil
 }
+
 func (l *Lobby) start(p *Packet, bytes []byte, from *Player) error {
 
 	if l.Round == 0 && from == l.Owner {
@@ -171,6 +173,6 @@ func (l *Lobby) start(p *Packet, bytes []byte, from *Player) error {
 
 		l.advanceLobby()
 	}
-	return nil
 
+	return nil
 }

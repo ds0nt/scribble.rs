@@ -28,7 +28,7 @@ type jsEvent struct {
 func init() {
 	game.TriggerComplexUpdateEvent = TriggerComplexUpdateEvent
 	game.TriggerSimpleUpdateEvent = TriggerSimpleUpdateEvent
-	game.SendDataToConnectedPlayers = SendDataToOtherPlayers
+	game.SendDataToOtherPlayers = SendDataToOtherPlayers
 	game.WriteAsJSON = WriteAsJSON
 	game.WritePublicSystemMessage = WritePublicSystemMessage
 	game.TriggerComplexUpdatePerPlayerEvent = TriggerComplexUpdatePerPlayerEvent

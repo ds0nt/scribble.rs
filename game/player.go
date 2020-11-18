@@ -34,6 +34,7 @@ type Player struct {
 	Name string `json:"name"`
 	// Score is the points that the player got in the current Lobby.
 	Score int `json:"score"`
+
 	// Connected defines whether the players websocket connection is currently
 	// established. This has previously been in state but has been moved out
 	// in order to avoid losing the state on refreshing the page.

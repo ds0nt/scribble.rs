@@ -153,7 +153,7 @@ func NewLobby(ownerName, language string, params NewLobbyParams) (string, *Lobby
 		timeLeftTickerReset: make(chan struct{}),
 		ClientsPerIPLimit:   params.ClientsPerIPLimit,
 		EnableVotekick:      params.EnableVotekick,
-		CurrentDrawing:      make([]interface{}, 0, 0),
+		CurrentDrawing:      []interface{}{},
 	}
 
 	if len(params.CustomWords) > 1 {
