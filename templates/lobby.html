@@ -17,7 +17,6 @@
         window.lobbyId = "{{.LobbyID}}";
     </script>
 
-    <script type="text/javascript" src="/resources/game.js"></script>
 </head>
 
 <noscript><span class="noscript">Hey, seems like you've disabled JavaScript.
@@ -72,13 +71,13 @@
                 <div id="word-dialog" class="center-dialog-content">
                     <span class="dialog-title">Choose a word to draw</span>
                     <div class="word-button-container">
-                        <div id="word-button-zero" class="dialog-word-button" onclick="chooseWord(0)">Placeholder</div>
-                        <div id="word-button-one" class="dialog-word-button" onclick="chooseWord(1)">Placeholder</div>
-                        <div id="word-button-two" class="dialog-word-button" onclick="chooseWord(2)">Placeholder</div>
+                        <div id="word-button-zero" class="dialog-word-button">Placeholder</div>
+                        <div id="word-button-one" class="dialog-word-button">Placeholder</div>
+                        <div id="word-button-two" class="dialog-word-button">Placeholder</div>
                     </div>
                 </div>
                 <div id="start-dialog" class="center-dialog-content">
-                    <div class="dialog-button" onclick="startGame">
+                    <div class="dialog-button" id="start-game-button">
                         <div></div>
                         <p>start game</p>
                     </div>
@@ -139,7 +138,7 @@
     <div id="cc-toolbox">
         <div class="big-group">
             <div>
-                <div class="draw active" onclick="chooseTool(pen)">
+                <div id="draw-tool" class="draw active">
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
                         <defs>
                             <style>
@@ -156,14 +155,14 @@
                     <p>Draw</p>
                 </div>
                 <div class="brush-group">
-                    <div class="small-circle active" onclick="setLineWidth(15)"></div>
-                    <div class="medium-circle" onclick="setLineWidth(30)"></div>
-                    <div class="huge-circle" onclick="setLineWidth(40)"></div>
+                    <div id="small-circle" class="active"></div>
+                    <div id="medium-circle"></div>
+                    <div id="huge-circle"></div>
                     <div class="brush-size">
                         Brush Size
                     </div>
                 </div>
-                <div class="fill" onclick="chooseTool(fillBucket)">
+                <div id="fill-tool" class="fill">
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"
                         style="margin-bottom: 1vh">
                         <defs>
@@ -186,32 +185,20 @@
                         alt="Current color (Click to change)" title="Current color (Click to change)">
                 </div>
                 <div class="color-button-group">
-                    <button class="color-button" style="background-color:#f0f4c3"
-                        onclick="setColor('#f0f4c3')"></button>
-                    <button class="color-button" style="background-color:#c1c1c1"
-                        onclick="setColor('#c1c1c1')"></button>
-                    <button class="color-button" style="background-color: #ef130b"
-                        onclick="setColor('#ef130b')"></button>
-                    <button class="color-button" style="background-color: #ff7100"
-                        onclick="setColor('#ff7100')"></button>
-                    <button class="color-button" style="background-color: #ffe400"
-                        onclick="setColor('#ffe400')"></button>
-                    <button class="color-button" style="background-color: #00cc00"
-                        onclick="setColor('#00cc00')"></button>
-                    <button class="color-button" style="background-color: #00b2ff"
-                        onclick="setColor('#00b2ff')"></button>
-                    <button class="color-button" style="background-color: #231fd3"
-                        onclick="setColor('#231fd3')"></button>
-                    <button class="color-button" style="background-color: #a300ba"
-                        onclick="setColor('#a300ba')"></button>
-                    <button class="color-button" style="background-color: #d37caa"
-                        onclick="setColor('#d37caa')"></button>
-                    <button class="color-button" style="background-color: #a0522d"
-                        onclick="setColor('#a0522d')"></button>
-                    <button class="color-button" style="background-color: #000000"
-                        onclick="setColor('#000000')"></button>
+                    <button class="color-button" style="background-color: #f0f4c3"></button>
+                    <button class="color-button" style="background-color: #c1c1c1"></button>
+                    <button class="color-button" style="background-color: #ef130b"></button>
+                    <button class="color-button" style="background-color: #ff7100"></button>
+                    <button class="color-button" style="background-color: #ffe400"></button>
+                    <button class="color-button" style="background-color: #00cc00"></button>
+                    <button class="color-button" style="background-color: #00b2ff"></button>
+                    <button class="color-button" style="background-color: #231fd3"></button>
+                    <button class="color-button" style="background-color: #a300ba"></button>
+                    <button class="color-button" style="background-color: #d37caa"></button>
+                    <button class="color-button" style="background-color: #a0522d"></button>
+                    <button class="color-button" style="background-color: #000000"></button>
                 </div>
-                <div class="erase" onclick="chooseTool(rubber)">
+                <div id="erase-tool" class="erase">
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
                         <defs>
                             <style>
@@ -246,7 +233,7 @@
             </div>
         </div>
         <div class="small-group">
-            <div class="clear" onclick="clearCanvasAndSendEvent()">
+            <div id="clear-tool" class="clear">
                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
                     <g transform="translate(-17 -17)">
                         <g transform="translate(17 17)">
@@ -258,7 +245,7 @@
                 </svg>
                 <p>Erase</p>
             </div>
-            <div class="undo">
+            <div id="undo-tool" class="undo">
                 <svg xmlns="http://www.w3.org/2000/svg" width="35.556" height="40" viewBox="0 0 35.556 40">
                     <g transform="translate(-30 -69.625)">
                         <path
@@ -273,6 +260,8 @@
 </div>
 
 <script type="text/javascript" src="/resources/floodfill.js"></script>
+<script type="text/javascript" src="/resources/game.js"></script>
+
 <script type="text/javascript" src="/resources/agora/jquery.min.js"></script>
 <script type="text/javascript" src="/resources/agora/materialize.min.js"></script>
 <script type="text/javascript" src="/resources/agora/AgoraRTCSDK-3.0.2.js"></script>

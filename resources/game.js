@@ -3,6 +3,20 @@ function _classCallCheck(instance, Constructor) {
         throw new TypeError("Cannot call a class as a function");
     }
 }
+function _defineProperties(target, props) {
+    for(var i = 0; i < props.length; i++){
+        var descriptor = props[i];
+        descriptor.enumerable = descriptor.enumerable || false;
+        descriptor.configurable = true;
+        if ("value" in descriptor) descriptor.writable = true;
+        Object.defineProperty(target, descriptor.key, descriptor);
+    }
+}
+function _createClass(Constructor, protoProps, staticProps) {
+    if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) _defineProperties(Constructor, staticProps);
+    return Constructor;
+}
 function _defineProperty(obj, key, value) {
     if (key in obj) {
         Object.defineProperty(obj, key, {
@@ -15,6 +29,215 @@ function _defineProperty(obj, key, value) {
         obj[key] = value;
     }
     return obj;
+}
+var Socket = function() {
+    "use strict";
+    function Socket() {
+        _classCallCheck(this, Socket);
+        _defineProperty(this, "handlers", {
+        });
+        // let wsURL(location.protocol === 'https:' ? "wss://" : "ws://") + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId
+        var wsURL = "ws://" + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId;
+        this.socket = new ReconnectingWebSocket(wsURL, null, {
+            debug: true,
+            reconnectInterval: 3000,
+            automaticOpen: false
+        });
+        this.socket.onmessage = (function(e) {
+            var parsed = JSON.parse(e.data);
+            if (typeof this.handlers[parsed.type] == 'undefined') {
+                console.error("socket received unknown message type " + parsed.type);
+                return;
+            }
+            this.handlers[parsed.type](parsed);
+        }).bind(this);
+        this.socket.onerror = function(err) {
+            return console.error("websocket error: ", err);
+        };
+    }
+    _createClass(Socket, [
+        {
+            key: "open",
+            value: function open() {
+                this.socket.open();
+            }
+        },
+        {
+            key: "addHandler",
+            value: function addHandler(type, fn) {
+                this.handlers[type] = fn;
+            }
+        },
+        {
+            key: "sendStart",
+            value: function sendStart() {
+                this.socket.send(JSON.stringify({
+                    type: "start"
+                }));
+            }
+        },
+        {
+            key: "sendClear",
+            value: function sendClear() {
+                this.socket.send(JSON.stringify({
+                    type: "clear-drawing-board"
+                }));
+            }
+        },
+        {
+            key: "sendMessage",
+            value: function sendMessage(text) {
+                this.socket.send(JSON.stringify({
+                    type: "message",
+                    data: text
+                }));
+            }
+        },
+        {
+            key: "sendChooseWord",
+            value: function sendChooseWord(index) {
+                this.socket.send(JSON.stringify({
+                    type: "choose-word",
+                    data: index
+                }));
+            }
+        },
+        {
+            key: "sendKickVote",
+            value: function sendKickVote(playerId) {
+                this.socket.send(JSON.stringify({
+                    type: "kick-vote",
+                    data: playerId
+                }));
+            }
+        },
+        {
+            key: "sendFill",
+            value: function sendFill(x, y, color) {
+                this.socket.send(JSON.stringify({
+                    type: "fill",
+                    data: {
+                        x: x,
+                        y: y,
+                        color: color
+                    }
+                }));
+            }
+        },
+        {
+            key: "sendLine",
+            value: function sendLine(x1, y1, x2, y2, color, lineWidth) {
+                var drawInstruction;
+                this.socket.send(JSON.stringify({
+                    type: "line",
+                    data: {
+                        fromX: x1,
+                        fromY: y1,
+                        toX: x2,
+                        toY: y2,
+                        color: color,
+                        lineWidth: lineWidth
+                    }
+                }));
+            }
+        }
+    ]);
+    return Socket;
+}();
+function rgbStr2hex(rgb) {
+    var hex = function hex(x) {
+        return ("0" + parseInt(x).toString(16)).slice(-2);
+    };
+    if (/^#[0-9A-F]{6}$/i.test(rgb)) return rgb;
+    rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+}
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+var context = null;
+function setContext(_context) {
+    context = _context;
+}
+function clear(context1) {
+    context1.fillStyle = "#FFFFFF";
+    context1.fillRect(0, 0, drawingBoard.width, drawingBoard.height);
+}
+function fill(context1, x1, y1, color) {
+    context1.fillStyle = color;
+    //There seems to be some bug where setting the tolerance to 0 causes a freeze when painting black on white.
+    context1.fillFlood(x1, y1, 1);
+}
+function drawLine(context1, x1, y1, x2, y2, color, lineWidth) {
+    // the coordinates must be whole numbers to improve performance.
+    // also, decimals as coordinates is not making sense.
+    // FIXME quick and dirty fix to apply the window scale to all drawing activities.
+    x1 = Math.floor(x1);
+    y1 = Math.floor(y1);
+    x2 = Math.floor(x2);
+    y2 = Math.floor(y2);
+    lineWidth = Math.ceil(lineWidth);
+    color = hexToRgb(color);
+    color[3] = 255; //alpha channel
+    var circleMap = generateCircleMap(Math.floor(lineWidth / 2));
+    var offset = Math.floor(circleMap.length / 2);
+    var imageData = context1.getImageData(0, 0, context1.canvas.clientWidth, context1.canvas.clientHeight);
+    for(var ix = 0; ix < circleMap.length; ix++)for(var iy = 0; iy < circleMap[ix].length; iy++)if (circleMap[ix][iy] === 1 || x1 === x2 && y1 === y2 && circleMap[ix][iy] === 2) {
+        var newX1 = x1 + ix - offset;
+        var newY1 = y1 + iy - offset;
+        var newX2 = x2 + ix - offset;
+        var newY2 = y2 + iy - offset;
+        drawBresenhamLine(imageData, newX1, newY1, newX2, newY2, color);
+    }
+    context1.putImageData(imageData, 0, 0);
+}
+function drawBresenhamLine(imageData, x0, y0, x1, y1, color) {
+    var dx = Math.abs(x1 - x0);
+    var dy = Math.abs(y1 - y0);
+    var sx = x0 < x1 ? 1 : -1;
+    var sy = y0 < y1 ? 1 : -1;
+    var err = dx - dy;
+    while(true){
+        //check if pixel is inside the canvas
+        if (x0 < 0 || x0 >= imageData.width || y0 < 0 || y0 >= imageData.height) return;
+        setPixel(imageData, x0, y0, color);
+        if (x0 === x1 && y0 === y1) break;
+        var e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+function generateCircleMap(radius) {
+    var circleData = [];
+    for(x = 0; x < 2 * radius; x++){
+        circleData[x] = [];
+        for(y = 0; y < 2 * radius; y++){
+            var distanceToRadius = Math.sqrt(Math.pow(radius - x, 2) + Math.pow(radius - y, 2));
+            if (distanceToRadius > radius) circleData[x][y] = 0;
+            else if (distanceToRadius < radius - 2) //optimize for performance: fill circle only when mouse was not moved
+            circleData[x][y] = 2;
+            else circleData[x][y] = 1;
+        }
+    }
+    return circleData;
+}
+function setPixel(imageData, x, y, color) {
+    var offset = (y * imageData.width + x) * 4;
+    imageData.data[offset] = color[0];
+    imageData.data[offset + 1] = color[1];
+    imageData.data[offset + 2] = color[2];
+    imageData.data[offset + 3] = color[3];
 }
 var messageInput = document.getElementById("message-input");
 var playerContainer = document.getElementById("player-container");
@@ -30,92 +253,33 @@ var wordDialog = document.getElementById("word-dialog");
 var wordButtonZero = document.getElementById("word-button-zero");
 var wordButtonOne = document.getElementById("word-button-one");
 var wordButtonTwo = document.getElementById("word-button-two");
-var Socket = function Socket() {
-    "use strict";
-    _classCallCheck(this, Socket);
-    _defineProperty(this, "addHandler", (function(type, fn) {
-        this.handlers[type] = fn;
-    }).bind(this));
-    _defineProperty(this, "sendStart", (function() {
-        this.socket.send(JSON.stringify({
-            type: "start"
-        }));
-    }).bind(this));
-    _defineProperty(this, "sendClear", (function() {
-        this.socket.send(JSON.stringify({
-            type: "clear-drawing-board"
-        }));
-    }).bind(this));
-    _defineProperty(this, "sendMessage", (function(text) {
-        this.socket.send(JSON.stringify({
-            type: "message",
-            data: text
-        }));
-    }).bind(this));
-    _defineProperty(this, "sendChooseWord", (function(index) {
-        this.socket.send(JSON.stringify({
-            type: "choose-word",
-            data: index
-        }));
-    }).bind(this));
-    _defineProperty(this, "sendKickVote", (function(playerId) {
-        this.socket.send(JSON.stringify({
-            type: "kick-vote",
-            data: playerId
-        }));
-    }).bind(this));
-    _defineProperty(this, "sendFill", (function(x, y, color) {
-        this.socket.send(JSON.stringify({
-            type: "fill",
-            data: {
-                x: x,
-                y: y,
-                color: color
-            }
-        }));
-    }).bind(this));
-    _defineProperty(this, "sendLine", (function(x1, y1, x2, y2, color, lineWidth) {
-        var drawInstruction;
-        this.socket.send(JSON.stringify({
-            type: "line",
-            data: {
-                fromX: x1,
-                fromY: y1,
-                toX: x2,
-                toY: y2,
-                color: color,
-                lineWidth: lineWidth * scaleUpFactor()
-            }
-        }));
-    }).bind(this));
-    // let wsURL = (location.protocol === 'https:' ? "wss://" : "ws://") + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId
-    var wsURL = "ws://" + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId;
-    this.socket = new ReconnectingWebSocket(wsURL, null, {
-        debug: true,
-        reconnectInterval: 3000
-    });
-    this.handlers = {
-    };
-    this.socket.onmessage = (function(e) {
-        var parsed = JSON.parse(e.data);
-        console.dir(parsed);
-        if (typeof this.handlers[parsed.type] == 'undefined') console.error("socket received unknown message type " + parsed.type);
-        this.handlers[parsed.type](parsed);
-    }).bind(this);
-    this.socket.onerror = function(err) {
-        return console.error("websocket error: ", err);
-    };
-};
 var socket = new Socket();
-function fillAndSendEvent(context, x, y, color) {
-    fill(context, x, y, color);
+function clearCanvasAndSendEvent() {
+    //Avoid unnecessary traffic back to us.
+    clear();
+    socket.sendClear();
+}
+function chooseWord(index) {
+    socket.sendChooseWord(index);
+    allowDrawing = true;
+    hide("#word-dialog");
+    wordDialog.style.display = "none";
+    $("#cc-toolbox").css({
+        'transform': 'translateX(0)'
+    });
+    $("#player-container").css({
+        'transform': 'translateX(-150%)'
+    });
+}
+function fillAndSendEvent(x, y, color) {
+    fill(x, y, color);
     var _x;
     var _y;
-    Socket.sendFill(x * scaleUpFactor(), y * scaleUpFactor(), color);
+    socket.sendFill(x * scaleUpFactor(), y * scaleUpFactor(), color);
 }
-function drawLineAndSendEvent(context, x1, y1, x2, y2, color, lineWidth) {
+function drawLineAndSendEvent(x1, y1, x2, y2, color, lineWidth) {
     if (localTool === 1) color = "#ffffff";
-    drawLine(context, x1, y1, x2, y2, color, lineWidth);
+    drawLine(x1, y1, x2, y2, color, lineWidth);
     var _x1;
     var _y1;
     var _x2;
@@ -128,14 +292,13 @@ function handleCanvasResize() {
     drawingBoard.height = drawingBoard.clientHeight;
     setLineWidth(localLineWidthUnscaled);
 }
-// Moving this here to extract the context after resizing
-var context = drawingBoard.getContext("2d");
-function scaleUpFactor() {
+setContext(drawingBoard.getContext("2d"));
+var scaleUpFactor = function() {
     return baseWidth / drawingBoard.clientWidth;
-}
-function scaleDownFactor() {
+};
+var scaleDownFactor = function() {
     return drawingBoard.clientWidth / baseWidth;
-}
+};
 var pen = 0;
 var rubber = 1;
 var fillBucket = 2;
@@ -150,13 +313,10 @@ function setLineWidth(value) {
     localLineWidth = value * scaleDownFactor();
     updateCursor();
 }
-function hexToRgb(hex) {
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    } : null;
+function chooseTool(value) {
+    if (value === pen || value === rubber || value === fillBucket) localTool = value;
+    else //If this ends up with an invalid value, we use the pencil.
+    localTool = pen;
 }
 function updateCursor() {
     var cursorColor;
@@ -215,13 +375,13 @@ socket.addHandler("reset-username", function(pkt) {
     document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 });
 socket.addHandler("line", function(pkt) {
-    drawLine(context, pkt.data.fromX * scaleDownFactor(), pkt.data.fromY * scaleDownFactor(), pkt.data.toX * scaleDownFactor(), pkt.data.toY * scaleDownFactor(), pkt.data.color, pkt.data.lineWidth * scaleDownFactor());
+    drawLine(pkt.data.fromX * scaleDownFactor(), pkt.data.fromY * scaleDownFactor(), pkt.data.toX * scaleDownFactor(), pkt.data.toY * scaleDownFactor(), pkt.data.color, pkt.data.lineWidth * scaleDownFactor());
 });
 socket.addHandler("fill", function(pkt) {
-    fill(context, pkt.data.x * scaleDownFactor(), pkt.data.y * scaleDownFactor(), pkt.data.color);
+    fill(pkt.data.x * scaleDownFactor(), pkt.data.y * scaleDownFactor(), pkt.data.color);
 });
 socket.addHandler("clear-drawing-board", function(pkt) {
-    clear(context);
+    clear();
 });
 socket.addHandler("next-turn", function(pkt) {
     $("#cc-toolbox").css({
@@ -233,7 +393,7 @@ socket.addHandler("next-turn", function(pkt) {
     //If a player doesn't choose, the dialog will still be up.
     wordDialog.style.display = "none";
     playWav('/resources/end-turn.wav');
-    clear(context);
+    clear();
     roundEndTime = pkt.data.roundEndTime;
     applyRounds(pkt.data.round, maxRounds);
     applyPlayers(pkt.data.players);
@@ -324,11 +484,11 @@ function applyWordHints(wordHints) {
     });
 }
 function applyDrawData(drawElements) {
-    clear(context);
+    clear();
     drawElements.forEach(function(drawElement) {
         var drawData = drawElement.data;
-        if (drawElement.type === "fill") fill(context, drawData.x * scaleDownFactor(), drawData.y * scaleDownFactor(), drawData.color);
-        else if (drawElement.type === "line") drawLine(context, drawData.fromX * scaleDownFactor(), drawData.fromY * scaleDownFactor(), drawData.toX * scaleDownFactor(), drawData.toY * scaleDownFactor(), drawData.color, drawData.lineWidth * scaleDownFactor());
+        if (drawElement.type === "fill") fill(drawData.x * scaleDownFactor(), drawData.y * scaleDownFactor(), drawData.color);
+        else if (drawElement.type === "line") drawLine(drawData.fromX * scaleDownFactor(), drawData.fromY * scaleDownFactor(), drawData.toX * scaleDownFactor(), drawData.toY * scaleDownFactor(), drawData.color, drawData.lineWidth * scaleDownFactor());
         else console.log("Unknown draw element type: " + drawData.type);
     });
 }
@@ -361,7 +521,7 @@ drawingBoard.ontouchmove = function(e) {
         var offsetX = touch.clientX - clientRect.left;
         var offsetY = touch.clientY - clientRect.top;
         // drawing functions must check for context boundaries
-        drawLineAndSendEvent(context, x, y, offsetX, offsetY, localColor, localLineWidth);
+        drawLineAndSendEvent(x, y, offsetX, offsetY, localColor, localLineWidth);
         x = offsetX;
         y = offsetY;
         return;
@@ -395,7 +555,7 @@ drawingBoard.onmousemove = function(e) {
         var offsetX = e.clientX - clientRect.left;
         var offsetY = e.clientY - clientRect.top;
         // drawing functions must check for context boundaries
-        drawLineAndSendEvent(context, x, y, offsetX, offsetY, localColor, localLineWidth);
+        drawLineAndSendEvent(x, y, offsetX, offsetY, localColor, localLineWidth);
         x = offsetX;
         y = offsetY;
     }
@@ -407,86 +567,68 @@ drawingBoard.onmouseenter = function(e) {
 };
 drawingBoard.onclick = function(e) {
     if (allowDrawing && e.button === 0) {
-        if (localTool === 2) fillAndSendEvent(context, e.offsetX, e.offsetY, localColor);
-        else drawLineAndSendEvent(context, e.offsetX, e.offsetY, e.offsetX, e.offsetY, localColor, localLineWidth);
+        if (localTool === 2) fillAndSendEvent(e.offsetX, e.offsetY, localColor);
+        else drawLineAndSendEvent(e.offsetX, e.offsetY, e.offsetX, e.offsetY, localColor, localLineWidth);
         isDrawing = false;
     }
 };
-function clear(context1) {
-    context1.fillStyle = "#FFFFFF";
-    context1.fillRect(0, 0, drawingBoard.width, drawingBoard.height);
-}
-function fill(context1, x1, y1, color) {
-    context1.fillStyle = color;
-    //There seems to be some bug where setting the tolerance to 0 causes a freeze when painting black on white.
-    context1.fillFlood(x1, y1, 1);
-}
-function drawLine(context1, x1, y1, x2, y2, color, lineWidth) {
-    // the coordinates must be whole numbers to improve performance.
-    // also, decimals as coordinates is not making sense.
-    // FIXME quick and dirty fix to apply the window scale to all drawing activities.
-    x1 = Math.floor(x1);
-    y1 = Math.floor(y1);
-    x2 = Math.floor(x2);
-    y2 = Math.floor(y2);
-    lineWidth = Math.ceil(lineWidth);
-    color = hexToRgb(color);
-    color[3] = 255; //alpha channel
-    var circleMap = generateCircleMap(Math.floor(lineWidth / 2));
-    var offset = Math.floor(circleMap.length / 2);
-    var imageData = context1.getImageData(0, 0, context1.canvas.clientWidth, context1.canvas.clientHeight);
-    for(var ix = 0; ix < circleMap.length; ix++)for(var iy = 0; iy < circleMap[ix].length; iy++)if (circleMap[ix][iy] === 1 || x1 === x2 && y1 === y2 && circleMap[ix][iy] === 2) {
-        var newX1 = x1 + ix - offset;
-        var newY1 = y1 + iy - offset;
-        var newX2 = x2 + ix - offset;
-        var newY2 = y2 + iy - offset;
-        drawBresenhamLine(imageData, newX1, newY1, newX2, newY2, color);
-    }
-    context1.putImageData(imageData, 0, 0);
-}
-function drawBresenhamLine(imageData, x0, y0, x1, y1, color) {
-    var dx = Math.abs(x1 - x0);
-    var dy = Math.abs(y1 - y0);
-    var sx = x0 < x1 ? 1 : -1;
-    var sy = y0 < y1 ? 1 : -1;
-    var err = dx - dy;
-    while(true){
-        //check if pixel is inside the canvas
-        if (x0 < 0 || x0 >= imageData.width || y0 < 0 || y0 >= imageData.height) return;
-        setPixel(imageData, x0, y0, color);
-        if (x0 === x1 && y0 === y1) break;
-        var e2 = 2 * err;
-        if (e2 > -dy) {
-            err -= dy;
-            x0 += sx;
-        }
-        if (e2 < dx) {
-            err += dx;
-            y0 += sy;
-        }
-    }
-}
-function generateCircleMap(radius) {
-    var circleData = [];
-    for(x = 0; x < 2 * radius; x++){
-        circleData[x] = [];
-        for(y = 0; y < 2 * radius; y++){
-            var distanceToRadius = Math.sqrt(Math.pow(radius - x, 2) + Math.pow(radius - y, 2));
-            if (distanceToRadius > radius) circleData[x][y] = 0;
-            else if (distanceToRadius < radius - 2) //optimize for performance: fill circle only when mouse was not moved
-            circleData[x][y] = 2;
-            else circleData[x][y] = 1;
-        }
-    }
-    return circleData;
-}
-function setPixel(imageData, x1, y1, color) {
-    var offset = (y1 * imageData.width + x1) * 4;
-    imageData.data[offset] = color[0];
-    imageData.data[offset + 1] = color[1];
-    imageData.data[offset + 2] = color[2];
-    imageData.data[offset + 3] = color[3];
-}
 //Call intially to correct initial state
 handleCanvasResize();
 window.addEventListener("resize", handleCanvasResize, false);
+function startGame() {
+    socket.sendStart();
+    //Tas: not needed
+    //startDialog.style.display = "hidden";
+    hide("#start-dialog");
+    show("#word-dialog");
+    wordDialog.style.display = "block";
+}
+// bind onclicks here because html function calling on window scope is annoying.
+document.getElementById('start-game-button').onclick = function(e) {
+    return startGame();
+};
+document.getElementById('word-button-zero').onclick = function(e) {
+    return chooseWord(0);
+};
+document.getElementById('word-button-one').onclick = function(e) {
+    return chooseWord(1);
+};
+document.getElementById('word-button-two').onclick = function(e) {
+    return chooseWord(2);
+};
+document.getElementById('small-circle').onclick = function(e) {
+    return setLineWidth(15);
+};
+document.getElementById('medium-circle').onclick = function(e) {
+    return setLineWidth(30);
+};
+document.getElementById('huge-circle').onclick = function(e) {
+    return setLineWidth(40);
+};
+document.getElementById('draw-tool').onclick = function(e) {
+    return chooseTool(pen);
+};
+document.getElementById('fill-tool').onclick = function(e) {
+    return chooseTool(fillBucket);
+};
+document.getElementById('erase-tool').onclick = function(e) {
+    return chooseTool(rubber);
+};
+document.getElementById('clear-tool').onclick = function(e) {
+    return clearCanvasAndSendEvent();
+};
+Array.from(document.getElementsByClassName('color-button')).forEach(function(el) {
+    el.onclick = function(e) {
+        return setColor(e.target.style.backgroundColor);
+    };
+});
+function setColor(value) {
+    if (value === undefined) localColor = colorPicker.value;
+    else {
+        value = rgbStr2hex(value);
+        localColor = value;
+        colorPicker.value = value;
+    }
+    document.documentElement.style.setProperty('--color', value);
+}
+socket.open();

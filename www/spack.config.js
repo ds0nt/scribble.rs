@@ -7,5 +7,7 @@ module.exports = config({
     output: {
         path: __dirname + '/dist'
     },
-    module: {},
+    module: {
+        "type": "commonjs"
+    },
 });
