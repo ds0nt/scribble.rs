@@ -7,19 +7,19 @@ export function setContext(_context) {
     context = _context
 }
 
-export function clear(context) {
+export function clear() {
     context.fillStyle = "#FFFFFF";
     context.fillRect(0, 0, drawingBoard.width, drawingBoard.height);
 }
 
-export function fill(context, x1, y1, color) {
+export function fill(x1, y1, color) {
     context.fillStyle = color;
     //There seems to be some bug where setting the tolerance to 0 causes a freeze when painting black on white.
     context.fillFlood(x1, y1, 1);
 }
 
 
-export function drawLine(context, x1, y1, x2, y2, color, lineWidth) {
+export function drawLine(x1, y1, x2, y2, color, lineWidth) {
     // the coordinates must be whole numbers to improve performance.
     // also, decimals as coordinates is not making sense.
     // FIXME quick and dirty fix to apply the window scale to all drawing activities.

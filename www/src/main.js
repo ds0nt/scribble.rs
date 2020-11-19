@@ -1,9 +1,73 @@
+import * as canvas from './canvas'
+import * as audio from './audio'
 
-const messageInput = document.getElementById("message-input");
+const PEN = 0;
+const RUBBER = 1;
+const FILL_BUCKET = 2;
+
+class GameState {
+    state = {
+        allowDrawing: false,
+        localColor: "#000000",
+        localLineWidth: 0,
+        localLineWidthUnscaled: 0,
+        localTool: PEN,
+
+        ownID: null,
+        ownerID: null,
+        maxRounds: 0,
+        roundEndTime: 0,
+    }
+    handlers = []
+    _updating =  false
+
+    setState(state) {
+        if (this._updating) {
+            console.error("cannot set state in state handlers")
+            return 
+        }
+        this._updating = true
+        try {
+            let prevState = { ...this.state }
+            this.state = {
+                ...this.state,
+                ...state,
+            }
+            this._propagate(prevState)
+        } catch (e) {
+            console.error(e)
+        }
+        this._updating = false
+    }
+
+    _propagate(prevState) {
+        this.handlers.map(
+            fn => fn(this.state, prevState)
+        )
+    }
+
+    registerHandler(fn) {
+        this.handlers.push(fn)
+        return  function unregisterHandler() {
+            this.handlers.filter((v) => v != fn)
+        }
+    }
+
+    reset() {
+        let prevState = { ...this.state }
+        this.state = {}
+        this.handlers = []
+        this._propagate(prevState)
+    }
+}
+
+let gameState = new GameState()
+
+
 const playerContainer = document.getElementById("player-container");
 const wordContainer = document.getElementById("word-container");
-const messageContainer = document.getElementById("message-container");
 const roundsSpan = document.getElementById("rounds");
+
 const timeLeft = document.getElementById("time-left");
 const drawingBoard = document.getElementById("drawing-board");
 //const chat = document.getElementById("chat");
@@ -11,6 +75,7 @@ const colorPicker = document.getElementById("color-picker");
 const centerDialog = document.getElementById("center-dialog");
 
 const startDialog = document.getElementById("start-dialog");
+
 const wordDialog = document.getElementById("word-dialog");
 const wordButtonZero = document.getElementById("word-button-zero");
 const wordButtonOne = document.getElementById("word-button-one");
@@ -20,60 +85,56 @@ import Socket from './socket.js'
 import {
     rgbStr2hex,
     hexToRgb,
+    hexToRgbStr,
+    contrastShade,
 } from './util.js'
-import {
-    setContext,
-    clear,
-    fill,
-    drawLine
-} from './canvas.js';
 
 
 let socket = new Socket()
 
 
-function clearCanvasAndSendEvent() {
+function clearAction() {
     //Avoid unnecessary traffic back to us.
-    clear();
+    canvas.clear();
     socket.sendClear()
 }
 
-const sendMessage = () => {
+const sendMessageAction = () => {
     socket.sendMessage(messageInput.value)
     messageInput.value = "";
 
-    // Necessary in order to keep the page from submitting.
     return false;
 };
 
-function chooseWord(index) {
+function chooseWordAction(index) {
     socket.sendChooseWord(index)
-
-    allowDrawing = true;
+    
     hide("#word-dialog");
     wordDialog.style.display = "none";
     $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
     $("#player-container").css({ 'transform': 'translateX(-150%)' });
+    
+    gameState.setState({allowDrawing: true})
 }
 
-function onClickKickButton(playerId) {
+function kickAction(playerId) {
     socket.sendKickVote(playerId);
 }
 
-function fillAndSendEvent(x, y, color) {
-    fill(x, y, color);
+function fillAction(x, y) {
+    canvas.fill(x, y, gameState.state.color);
     let _x = x * scaleUpFactor()
     let _y = y * scaleUpFactor()
-    socket.sendFill(_x, _y, color)
+    socket.sendFill(_x, _y, gameState.state.color)
 
 }
 
-function drawLineAndSendEvent(x1, y1, x2, y2, color, lineWidth) {
-    if (localTool === 1) {
+function drawAction(x1, y1, x2, y2) {
+    if (gameState.state.localTool === RUBBER) {
         color = "#ffffff";
     }
 
-    drawLine(x1, y1, x2, y2, color, lineWidth);
+    canvas.drawLine(x1, y1, x2, y2, gameState.state.localColor, gameState.state.localLineWidth);
 
     let _x1 = x1 * scaleUpFactor()
     let _y1 = y1 * scaleUpFactor()
@@ -106,89 +167,82 @@ function drawLineAndSendEvent(x1, y1, x2, y2, color, lineWidth) {
 //The drawing board has a base size. This base size results in a certain ratio
 //that the actual canvas has to be resized accordingly too. This is needed
 //since not every client has the same screensize.
-let boardRatio = baseWidth / baseHeight;
+let boardRatio = window.baseWidth / window.baseHeight;
 
 function handleCanvasResize() {
     drawingBoard.width = drawingBoard.clientWidth;
     drawingBoard.height = drawingBoard.clientHeight;
-    setLineWidth(localLineWidthUnscaled);
+    setLineWidthAction(gameState.state.localLineWidthUnscaled);
     // chat.style.maxHeight = drawingBoard.height + "px";
 }
 
-setContext(drawingBoard.getContext("2d"))
+canvas.setContext(drawingBoard.getContext("2d"))
 
-const scaleUpFactor = () => baseWidth / drawingBoard.clientWidth;
-const scaleDownFactor = () => drawingBoard.clientWidth / baseWidth;
-
-const pen = 0;
-const rubber = 1;
-const fillBucket = 2;
-
-let allowDrawing = false;
-let localColor = "#000000";
-let localLineWidth;
-let localLineWidthUnscaled;
-let localTool = pen;
-setLineWidth(5);
+const scaleUpFactor = () => window.baseWidth / drawingBoard.clientWidth;
+const scaleDownFactor = () => drawingBoard.clientWidth / window.baseWidth;
 
 
 
-function setLineWidth(value) {
-    localLineWidthUnscaled = value;
-    localLineWidth = value * scaleDownFactor();
-    updateCursor();
+function setColorAction(value) {
+    let localColor
+    if (value === undefined) {
+        localColor = colorPicker.value
+    } else {
+        value = rgbStr2hex(value)
+        colorPicker.value = value;
+        localColor = value
+    }
+    gameState.setState({ localColor });
+
+    document.documentElement.style.setProperty('--color', value);
 }
 
-function chooseTool(value) {
-    if (value === pen || value === rubber || value === fillBucket) {
-        localTool = value;
-    } else {
-        //If this ends up with an invalid value, we use the pencil.
-        localTool = pen;
+function setLineWidthAction(value) {
+    gameState.setState({
+        localLineWidthUnscaled: value,
+        localLineWidth: value * scaleDownFactor(),
+    })
+}
+
+function chooseToolAction(value) {
+    if (value === PEN || value === RUBBER || value === FILL_BUCKET) {
+        gameState.setState({localTool: value})
     }
 }
 
-function updateCursor() {
+
+// on set line width
+gameState.registerHandler((state, prevState) => {
+    if (state.localLineWidth == prevState.localLineWidth) {
+        return
+    }
     let cursorColor;
     let borderColor = "#FFFFFF";
-    if (localColor.startsWith("#")) {
-        cursorColor = hexToRgb(localColor);
-
-        const hsp = Math.sqrt(
-            0.299 * (cursorColor[0] * cursorColor[0]) +
-            0.587 * (cursorColor[1] * cursorColor[1]) +
-            0.114 * (cursorColor[2] * cursorColor[2])
-        );
-
-        if (hsp > 127.5) {
-            borderColor = "rgb(0,0,0)";
-        } else {
-            borderColor = "rgb(255,255,255)";
-        }
-
-        cursorColor = "rgb(" + cursorColor[0] + "," + cursorColor[1] + "," + cursorColor[2] + ")";
+    if (state.localColor.startsWith("#")) {
+        cursorColor = hexToRgbStr(state.localColor);
+        borderColor = contrastShade(hexToRgb(state.localColor))
     } else {
-        cursorColor = localColor;
+        cursorColor = state.localColor;
     }
 
-    let circleSize = localLineWidth * scaleUpFactor();
+    let circleSize = state.localLineWidth * scaleUpFactor();
     drawingBoard.style.cursor = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"" + (circleSize + 2) + "\" height=\"" + (circleSize + 2) + "\"><circle cx=\"" + (circleSize / 2) + "\" cy=\"" + (circleSize / 2) + "\" r=\"" + (circleSize / 2) + "\" style=\"fill: " + cursorColor + "; stroke: " + borderColor + ";\"/></svg>') " + (circleSize / 2) + " " + (circleSize / 2) + ", auto";
-}
+})
 
-let ownID, ownerID;
-let maxRounds = 0;
-let roundEndTime = 0;
 
 socket.addHandler("ready", (pkt) => {
     let ready = pkt.data;
-    ownerID = ready.ownerId;
-    allowDrawing = ready.drawing;
-    ownID = ready.playerId;
-    maxRounds = ready.maxRounds;
-    roundEndTime = ready.roundEndTime;
+    
+    gameState.setState({
+        ownerID: ready.ownerId,
+        allowDrawing: ready.drawing,
+        ownID: ready.playerId,
+        maxRounds: ready.maxRounds,
+        roundEndTime: ready.roundEndTime,
+    })
     applyRounds(ready.round, ready.maxRounds);
 
-    if (ready.round === 0 && ownerID === ownID) {
+    if (ready.round === 0 && ready.ownerId === ready.playerId) {
         show("#start-dialog")
         startDialog.style.display = "block";
     }
@@ -207,7 +261,7 @@ socket.addHandler("update-players", (pkt) => {
     applyPlayers(pkt.data);
 })
 socket.addHandler("correct-guess", (pkt) => {
-    playWav('/resources/plop.wav');
+    audio.plop()
 })
 socket.addHandler("update-wordhint", (pkt) => {
     applyWordHints(pkt.data);
@@ -228,60 +282,48 @@ socket.addHandler("reset-username", (pkt) => {
     document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 })
 socket.addHandler("line", (pkt) => {
-    drawLine(pkt.data.fromX * scaleDownFactor(), pkt.data.fromY * scaleDownFactor(), pkt.data.toX * scaleDownFactor(), pkt.data.toY * scaleDownFactor(), pkt.data.color, pkt.data.lineWidth * scaleDownFactor());
+    canvas.drawLine(pkt.data.fromX * scaleDownFactor(), pkt.data.fromY * scaleDownFactor(), pkt.data.toX * scaleDownFactor(), pkt.data.toY * scaleDownFactor(), pkt.data.color, pkt.data.lineWidth * scaleDownFactor());
 })
 socket.addHandler("fill", (pkt) => {
-    fill(pkt.data.x * scaleDownFactor(), pkt.data.y * scaleDownFactor(), pkt.data.color);
+    canvas.fill(pkt.data.x * scaleDownFactor(), pkt.data.y * scaleDownFactor(), pkt.data.color);
 })
 socket.addHandler("clear-drawing-board", (pkt) => {
-    clear()
+    canvas.clear()
 })
 socket.addHandler("next-turn", (pkt) => {
     $("#cc-toolbox").css({ 'transform': 'translateX(-150%)' });
     $("#player-container").css({ 'transform': 'translateX(0)' });
     //If a player doesn't choose, the dialog will still be up.
     wordDialog.style.display = "none";
-    playWav('/resources/end-turn.wav');
+    audio.endTurn()
 
-    clear();
+    canvas.clear();
 
-    roundEndTime = pkt.data.roundEndTime;
-    applyRounds(pkt.data.round, maxRounds);
+    applyRounds(pkt.data.round, gameState.state.maxRounds);
     applyPlayers(pkt.data.players);
-
+    
     //We clear this, since there's no word chosen right now.
     wordContainer.innerHTML = "";
-
-    allowDrawing = false;
+    
+    gameState.setState({
+        roundEndTime: pkt.data.roundEndTime, 
+        allowDrawing: false
+    })
 })
 socket.addHandler("your-turn", (pkt) => {
-    playWav('/resources/your-turn.wav');
-    promptWords(pkt.data[0], pkt.data[1], pkt.data[2]);
+    audio.yourTurn()
+    wordButtonZero.textContent = pkt.data[0];
+    wordButtonOne.textContent = pkt.data[1];
+    wordButtonTwo.textContent = pkt.data[2];
+    wordDialog.style.display = "block";
     show("#word-dialog")
     $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
     $("#player-container").css({ 'transform': 'translateX(-150%)' });
 })
 
 
-function promptWords(wordOne, wordTwo, wordThree) {
-    wordButtonZero.textContent = wordOne;
-    wordButtonOne.textContent = wordTwo;
-    wordButtonTwo.textContent = wordThree;
-    wordDialog.style.display = "block";
-    //show("#word-dialog");
-}
-
-function playWav(file) {
-    //Tas: add this ine
-    if (true) {
-        let audio = new Audio(file);
-        audio.type = 'audio/wav';
-        audio.play();
-    }
-}
-
 window.setInterval(function () {
-    let secondsLeft = Math.floor((roundEndTime - new Date().getTime()) / 1000);
+    let secondsLeft = Math.floor((gameState.state.roundEndTime - (new Date().getTime())) / 1000);
     if (secondsLeft >= 0) {
         timeLeft.innerText = secondsLeft;
     } else {
@@ -289,21 +331,6 @@ window.setInterval(function () {
     }
 }, 500);
 
-function applyMessage(styleClass, author, message) {
-    console.log(message);
-    if (message === "Game over. Type !start again to start a new round.") {
-        show("#score-dialog");
-        return;
-    }
-    if (messageContainer.childElementCount >= 100) {
-        messageContainer.removeChild(messageContainer.firstChild)
-    }
-
-    messageContainer.innerHTML += `<div class="message ` + styleClass + `">
-                            <span class="chat-name">` + author + `</span>
-                            <span class="message-content">` + message + `</span>
-                        </div>`;
-}
 
 // <div class="playerBox">
 //         <img src="../resources/image/avatar_phillip.png" alt="">
@@ -311,9 +338,9 @@ function applyMessage(styleClass, author, message) {
 //         <div class="playerScore">0</div>
 //     </div> 
 function applyPlayers(players) {
+    const ownID = gameState.state.ownID
     playerContainer.innerHTML = "";
     players.forEach(function (player) {
-        //We don't wanna show the disconnected players.
         if (!player.connected) {
             return;
         }
@@ -349,7 +376,6 @@ function applyPlayers(players) {
         let newPlayer = document.createRange().createContextualFragment(newPlayerElement);
         console.log(newPlayer);
         playerContainer.appendChild(newPlayer);
-        //playerContainer.innerHTML += newPlayerElement;
 
     });
 }
@@ -376,48 +402,49 @@ function applyWordHints(wordHints) {
 }
 
 function applyDrawData(drawElements) {
-    clear();
+    canvas.clear();
     drawElements.forEach(function (drawElement) {
         let drawData = drawElement.data;
         if (drawElement.type === "fill") {
-            fill(drawData.x * scaleDownFactor(), drawData.y * scaleDownFactor(), drawData.color);
+            canvas.fill(drawData.x * scaleDownFactor(), drawData.y * scaleDownFactor(), drawData.color);
         } else if (drawElement.type === "line") {
-            drawLine(drawData.fromX * scaleDownFactor(), drawData.fromY * scaleDownFactor(), drawData.toX * scaleDownFactor(), drawData.toY * scaleDownFactor(), drawData.color, drawData.lineWidth * scaleDownFactor());
+            canvas.drawLine(drawData.fromX * scaleDownFactor(), drawData.fromY * scaleDownFactor(), drawData.toX * scaleDownFactor(), drawData.toY * scaleDownFactor(), drawData.color, drawData.lineWidth * scaleDownFactor());
         } else {
             console.log("Unknown draw element type: " + drawData.type)
         }
     });
 }
 
-let isDrawing = false;
-let x = 0;
-let y = 0;
-
-// asdf
+let cursorDrawing = false;
+let cursorX = 0;
+let cursorY = 0;
 
 // Touch input
 let touchID = 0;
 
 drawingBoard.ontouchstart = function (e) {
-    if (!isDrawing && allowDrawing) {
+    const { allowDrawing, localTool } = gameState.state
+
+    if (!cursorDrawing && allowDrawing) {
         touchID = e.touches[0].identifier;
 
         if (allowDrawing && localTool !== 2) {
             // calculate the offset coordinates based on client touch position and drawing board client origin
             let clientRect = drawingBoard.getBoundingClientRect();
-            x = (e.touches[0].clientX - clientRect.left);
-            y = (e.touches[0].clientY - clientRect.top);
+            cursorX = (e.touches[0].clientX - clientRect.left);
+            cursorY = (e.touches[0].clientY - clientRect.top);
 
-            isDrawing = true;
+            cursorDrawing = true;
         }
     }
 };
 
 drawingBoard.ontouchmove = function (e) {
+    const { allowDrawing } = gameState.state
     //FIXME Explanation? Does this prevent moving the page?
     e.preventDefault();
 
-    if (allowDrawing && isDrawing) {
+    if (allowDrawing && cursorDrawing) {
         // find touch with correct ID
         for (let i = e.changedTouches.length - 1; i >= 0; i--) {
             if (e.changedTouches[i].identifier === touchID) {
@@ -429,9 +456,9 @@ drawingBoard.ontouchmove = function (e) {
                 let offsetY = (touch.clientY - clientRect.top);
 
                 // drawing functions must check for context boundaries
-                drawLineAndSendEvent(x, y, offsetX, offsetY, localColor, localLineWidth);
-                x = offsetX;
-                y = offsetY;
+                drawAction(cursorX, cursorY, offsetX, offsetY);
+                cursorX = offsetX;
+                cursorY = offsetY;
 
                 return;
             }
@@ -440,11 +467,11 @@ drawingBoard.ontouchmove = function (e) {
 };
 
 drawingBoard.ontouchcancel = function (e) {
-    if (isDrawing) {
+    if (cursorDrawing) {
         // find touch with correct ID
         for (let i = e.changedTouches.length - 1; i >= 0; i--) {
             if (e.changedTouches[i].identifier === touchID) {
-                isDrawing = false;
+                cursorDrawing = false;
                 return;
             }
         }
@@ -454,11 +481,13 @@ drawingBoard.ontouchend = drawingBoard.ontouchcancel
 
 // Mouse input
 drawingBoard.onmousedown = function (e) {
-    if (allowDrawing && e.button === 0 && localTool !== 2) {
-        x = e.offsetX;
-        y = e.offsetY;
+    const { allowDrawing, localTool } = gameState.state
 
-        isDrawing = true;
+    if (allowDrawing && e.button === 0 && localTool !== 2) {
+        cursorX = e.offsetX;
+        cursorY = e.offsetY;
+
+        cursorDrawing = true;
     }
 
     return false;
@@ -466,39 +495,43 @@ drawingBoard.onmousedown = function (e) {
 
 // This is executed even if the mouse is not above the browser anymore.
 window.onmouseup = function (e) {
-    if (isDrawing === true) {
-        isDrawing = false;
+    if (cursorDrawing === true) {
+        cursorDrawing = false;
     }
 };
 
 drawingBoard.onmousemove = function (e) {
-    if (allowDrawing && isDrawing === true && e.button === 0) {
+    const { allowDrawing } = gameState.state
+
+    if (allowDrawing && cursorDrawing === true && e.button === 0) {
         // calculate the offset coordinates based on client mouse position and drawing board client origin
         let clientRect = drawingBoard.getBoundingClientRect();
         let offsetX = (e.clientX - clientRect.left);
         let offsetY = (e.clientY - clientRect.top);
 
         // drawing functions must check for context boundaries
-        drawLineAndSendEvent(x, y, offsetX, offsetY, localColor, localLineWidth);
-        x = offsetX;
-        y = offsetY;
+        drawAction(cursorX, cursorY, offsetX, offsetY);
+        cursorX = offsetX;
+        cursorY = offsetY;
     }
 };
 
 // necessary for mousemove to not use the previous exit coordinates.
 drawingBoard.onmouseenter = function (e) {
-    x = e.offsetX;
-    y = e.offsetY;
+    cursorX = e.offsetX;
+    cursorY = e.offsetY;
 };
 
 drawingBoard.onclick = function (e) {
+    const { allowDrawing, localTool } = gameState.state
+
     if (allowDrawing && e.button === 0) {
         if (localTool === 2) {
-            fillAndSendEvent(e.offsetX, e.offsetY, localColor)
+            fillAction(e.offsetX, e.offsetY)
         } else {
-            drawLineAndSendEvent(e.offsetX, e.offsetY, e.offsetX, e.offsetY, localColor, localLineWidth);
+            drawAction(e.offsetX, e.offsetY, e.offsetX, e.offsetY);
         }
-        isDrawing = false;
+        cursorDrawing = false;
     }
 };
 
@@ -519,34 +552,25 @@ function startGame() {
 // bind onclicks here because html function calling on window scope is annoying.
 document.getElementById('start-game-button').onclick = e => startGame()
 
-document.getElementById('word-button-zero').onclick = e => chooseWord(0)
-document.getElementById('word-button-one').onclick = e => chooseWord(1)
-document.getElementById('word-button-two').onclick = e => chooseWord(2)
+document.getElementById('word-button-zero').onclick = e => chooseWordAction(0)
+document.getElementById('word-button-one').onclick = e => chooseWordAction(1)
+document.getElementById('word-button-two').onclick = e => chooseWordAction(2)
 
-document.getElementById('small-circle').onclick = e => setLineWidth(15)
-document.getElementById('medium-circle').onclick = e => setLineWidth(30)
-document.getElementById('huge-circle').onclick = e => setLineWidth(40)
+document.getElementById('small-circle').onclick = e => setLineWidthAction(15)
+document.getElementById('medium-circle').onclick = e => setLineWidthAction(30)
+document.getElementById('huge-circle').onclick = e => setLineWidthAction(40)
 
-document.getElementById('draw-tool').onclick = e => chooseTool(pen)
-document.getElementById('fill-tool').onclick = e => chooseTool(fillBucket)
-document.getElementById('erase-tool').onclick = e => chooseTool(rubber)
-document.getElementById('clear-tool').onclick = e => clearCanvasAndSendEvent()
+document.getElementById('draw-tool').onclick = e => chooseToolAction(PEN)
+document.getElementById('fill-tool').onclick = e => chooseToolAction(FILL_BUCKET)
+document.getElementById('erase-tool').onclick = e => chooseToolAction(RUBBER)
+document.getElementById('clear-tool').onclick = e => clearAction()
 
 Array.from(document.getElementsByClassName('color-button')).forEach(
     el => {
-        el.onclick = e => setColor(e.target.style.backgroundColor)
+        el.onclick = e => setColorAction(e.target.style.backgroundColor)
     }
 )
 
-function setColor(value) {
-    if (value === undefined) {
-        localColor = colorPicker.value;
-    } else {
-        value = rgbStr2hex(value)
-        localColor = value;
-        colorPicker.value = value;
-    }
-    document.documentElement.style.setProperty('--color', value);
-    //updateCursor();
-}
+setLineWidthAction(5);
+
 socket.open()

@@ -18,3 +18,23 @@ export function hexToRgb(hex) {
         b: parseInt(result[3], 16)
     } : null;
 }
+// returns an object
+export function hexToRgbStr(hex) {
+    let color = hexToRgb(hex)
+    return "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")";
+}
+
+export function contrastShade(colorObj) {
+    const hsp = Math.sqrt(
+        0.299 * (colorObj.r * colorObj.r) +
+        0.587 * (colorObj.g * colorObj.g) +
+        0.114 * (colorObj.b * colorObj.b)
+    );
+
+    if (hsp > 127.5) {
+        borderColor = "rgb(0,0,0)";
+    } else {
+        borderColor = "rgb(255,255,255)";
+    }
+    return borderColor
+}
