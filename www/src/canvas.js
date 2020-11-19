@@ -30,7 +30,6 @@ export function drawLine(x1, y1, x2, y2, color, lineWidth) {
     lineWidth = Math.ceil(lineWidth);
 
     color = hexToRgb(color);
-    color[3] = 255; //alpha channel
 
     const circleMap = generateCircleMap(Math.floor(lineWidth / 2));
     const offset = Math.floor(circleMap.length / 2);
@@ -98,8 +97,8 @@ function generateCircleMap(radius) {
 
 function setPixel(imageData, x, y, color) {
     const offset = (y * imageData.width + x) * 4;
-    imageData.data[offset] = color[0];
-    imageData.data[offset + 1] = color[1];
-    imageData.data[offset + 2] = color[2];
-    imageData.data[offset + 3] = color[3];
+    imageData.data[offset] = color.r;
+    imageData.data[offset + 1] = color.g;
+    imageData.data[offset + 2] = color.b;
+    imageData.data[offset + 3] = 255; // alpha
 }

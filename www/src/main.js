@@ -19,12 +19,12 @@ class GameState {
         roundEndTime: 0,
     }
     handlers = []
-    _updating =  false
+    _updating = false
 
     setState(state) {
         if (this._updating) {
             console.error("cannot set state in state handlers")
-            return 
+            return
         }
         this._updating = true
         try {
@@ -33,6 +33,8 @@ class GameState {
                 ...this.state,
                 ...state,
             }
+        console.log("prev state", prevState)
+        console.log("next state", this.state)
             this._propagate(prevState)
         } catch (e) {
             console.error(e)
@@ -48,7 +50,7 @@ class GameState {
 
     registerHandler(fn) {
         this.handlers.push(fn)
-        return  function unregisterHandler() {
+        return function unregisterHandler() {
             this.handlers.filter((v) => v != fn)
         }
     }
@@ -108,13 +110,13 @@ const sendMessageAction = () => {
 
 function chooseWordAction(index) {
     socket.sendChooseWord(index)
-    
+
     hide("#word-dialog");
     wordDialog.style.display = "none";
     $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
     $("#player-container").css({ 'transform': 'translateX(-150%)' });
-    
-    gameState.setState({allowDrawing: true})
+
+    gameState.setState({ allowDrawing: true })
 }
 
 function kickAction(playerId) {
@@ -130,18 +132,22 @@ function fillAction(x, y) {
 }
 
 function drawAction(x1, y1, x2, y2) {
-    if (gameState.state.localTool === RUBBER) {
-        color = "#ffffff";
+    const { localColor, lineWidth, localLineWidth, localTool } = gameState.state
+    let _color
+    if (localTool === RUBBER) {
+        _color = "#ffffff";
+    } else {
+        _color = localColor
     }
 
-    canvas.drawLine(x1, y1, x2, y2, gameState.state.localColor, gameState.state.localLineWidth);
+    canvas.drawLine(x1, y1, x2, y2, _color, localLineWidth);
 
     let _x1 = x1 * scaleUpFactor()
     let _y1 = y1 * scaleUpFactor()
     let _x2 = x2 * scaleUpFactor()
     let _y2 = y2 * scaleUpFactor()
     let _lineWidth = lineWidth * scaleUpFactor()
-    Socket.sendLine(_x1, _y1, _x2, _y2, color, _lineWidth)
+    socket.sendLine(_x1, _y1, _x2, _y2, _color, _lineWidth)
 }
 
 // const noSoundIcon = "🔇";
@@ -206,7 +212,7 @@ function setLineWidthAction(value) {
 
 function chooseToolAction(value) {
     if (value === PEN || value === RUBBER || value === FILL_BUCKET) {
-        gameState.setState({localTool: value})
+        gameState.setState({ localTool: value })
     }
 }
 
@@ -232,7 +238,7 @@ gameState.registerHandler((state, prevState) => {
 
 socket.addHandler("ready", (pkt) => {
     let ready = pkt.data;
-    
+
     gameState.setState({
         ownerID: ready.ownerId,
         allowDrawing: ready.drawing,
@@ -301,12 +307,12 @@ socket.addHandler("next-turn", (pkt) => {
 
     applyRounds(pkt.data.round, gameState.state.maxRounds);
     applyPlayers(pkt.data.players);
-    
+
     //We clear this, since there's no word chosen right now.
     wordContainer.innerHTML = "";
-    
+
     gameState.setState({
-        roundEndTime: pkt.data.roundEndTime, 
+        roundEndTime: pkt.data.roundEndTime,
         allowDrawing: false
     })
 })

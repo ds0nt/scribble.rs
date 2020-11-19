@@ -95,7 +95,6 @@ function drawLine(x1, y1, x2, y2, color, lineWidth) {
     y2 = Math.floor(y2);
     lineWidth = Math.ceil(lineWidth);
     color = hexToRgb(color);
-    color[3] = 255; //alpha channel
     var circleMap = generateCircleMap(Math.floor(lineWidth / 2));
     var offset = Math.floor(circleMap.length / 2);
     var imageData = context.getImageData(0, 0, context.canvas.clientWidth, context.canvas.clientHeight);
@@ -146,10 +145,10 @@ function generateCircleMap(radius) {
 }
 function setPixel(imageData, x, y, color) {
     var offset = (y * imageData.width + x) * 4;
-    imageData.data[offset] = color[0];
-    imageData.data[offset + 1] = color[1];
-    imageData.data[offset + 2] = color[2];
-    imageData.data[offset + 3] = color[3];
+    imageData.data[offset] = color.r;
+    imageData.data[offset + 1] = color.g;
+    imageData.data[offset + 2] = color.b;
+    imageData.data[offset + 3] = 255; // alpha
 }
 function playWav(file) {
     var audio = new Audio(file);
@@ -314,6 +313,8 @@ var GameState = function() {
                     }, this.state);
                     this.state = _objectSpread({
                     }, this.state, state);
+                    console.log("prev state", prevState);
+                    console.log("next state", this.state);
                     this._propagate(prevState);
                 } catch (e) {
                     console.error(e);
@@ -394,14 +395,17 @@ function fillAction(x, y) {
     socket.sendFill(x * scaleUpFactor(), y * scaleUpFactor(), gameState.state.color);
 }
 function drawAction(x1, y1, x2, y2) {
-    if (gameState.state.localTool === RUBBER) color = "#ffffff";
-    drawLine(x1, y1, x2, y2, gameState.state.localColor, gameState.state.localLineWidth);
+    var _state = gameState.state, localColor = _state.localColor, lineWidth = _state.lineWidth, localLineWidth = _state.localLineWidth, localTool = _state.localTool;
+    var _color;
+    if (localTool === RUBBER) _color = "#ffffff";
+    else _color = localColor;
+    drawLine(x1, y1, x2, y2, _color, localLineWidth);
     var _x1;
     var _y1;
     var _x2;
     var _y2;
     var _lineWidth;
-    Socket.sendLine(x1 * scaleUpFactor(), y1 * scaleUpFactor(), x2 * scaleUpFactor(), y2 * scaleUpFactor(), color, lineWidth * scaleUpFactor());
+    socket.sendLine(x1 * scaleUpFactor(), y1 * scaleUpFactor(), x2 * scaleUpFactor(), y2 * scaleUpFactor(), _color, lineWidth * scaleUpFactor());
 }
 function handleCanvasResize() {
     drawingBoard.width = drawingBoard.clientWidth;
