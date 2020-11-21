@@ -1,69 +1,20 @@
 import * as canvas from './canvas'
 import * as audio from './audio'
 
-const PEN = 0;
-const RUBBER = 1;
-const FILL_BUCKET = 2;
+import { PEN, RUBBER, FILL_BUCKET } from './constants';
+import gameState from './game-state'
 
-class GameState {
-    state = {
-        allowDrawing: false,
-        localColor: "#000000",
-        localLineWidth: 0,
-        localLineWidthUnscaled: 0,
-        localTool: PEN,
+import Socket from './socket.js';
+window.socket = new Socket()
 
-        ownID: null,
-        ownerID: null,
-        maxRounds: 0,
-        roundEndTime: 0,
-    }
-    handlers = []
-    _updating = false
+import {
+    hexToRgb,
+    hexToRgbStr,
+    contrastShade,
+} from './util.js'
+import { registerCircles } from './components/tools';
+import { setLineWidthAction, drawAction, fillAction, chooseWordAction, chooseToolAction, clearAction, setColorAction } from './actions';
 
-    setState(state) {
-        if (this._updating) {
-            console.error("cannot set state in state handlers")
-            return
-        }
-        this._updating = true
-        try {
-            let prevState = { ...this.state }
-            this.state = {
-                ...this.state,
-                ...state,
-            }
-        console.log("prev state", prevState)
-        console.log("next state", this.state)
-            this._propagate(prevState)
-        } catch (e) {
-            console.error(e)
-        }
-        this._updating = false
-    }
-
-    _propagate(prevState) {
-        this.handlers.map(
-            fn => fn(this.state, prevState)
-        )
-    }
-
-    registerHandler(fn) {
-        this.handlers.push(fn)
-        return function unregisterHandler() {
-            this.handlers.filter((v) => v != fn)
-        }
-    }
-
-    reset() {
-        let prevState = { ...this.state }
-        this.state = {}
-        this.handlers = []
-        this._propagate(prevState)
-    }
-}
-
-let gameState = new GameState()
 
 
 const playerContainer = document.getElementById("player-container");
@@ -72,10 +23,6 @@ const roundsSpan = document.getElementById("rounds");
 
 const timeLeft = document.getElementById("time-left");
 const drawingBoard = document.getElementById("drawing-board");
-//const chat = document.getElementById("chat");
-const colorPicker = document.getElementById("color-picker");
-const centerDialog = document.getElementById("center-dialog");
-
 const startDialog = document.getElementById("start-dialog");
 
 const wordDialog = document.getElementById("word-dialog");
@@ -83,156 +30,57 @@ const wordButtonZero = document.getElementById("word-button-zero");
 const wordButtonOne = document.getElementById("word-button-one");
 const wordButtonTwo = document.getElementById("word-button-two");
 
-import Socket from './socket.js'
-import {
-    rgbStr2hex,
-    hexToRgb,
-    hexToRgbStr,
-    contrastShade,
-} from './util.js'
-
-
-let socket = new Socket()
-
-
-function clearAction() {
-    //Avoid unnecessary traffic back to us.
-    canvas.clear();
-    socket.sendClear()
-}
-
-const sendMessageAction = () => {
-    socket.sendMessage(messageInput.value)
-    messageInput.value = "";
-
-    return false;
-};
-
-function chooseWordAction(index) {
-    socket.sendChooseWord(index)
-
-    hide("#word-dialog");
-    wordDialog.style.display = "none";
-    $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
-    $("#player-container").css({ 'transform': 'translateX(-150%)' });
-
-    gameState.setState({ allowDrawing: true })
-}
-
-function kickAction(playerId) {
-    socket.sendKickVote(playerId);
-}
-
-function fillAction(x, y) {
-    canvas.fill(x, y, gameState.state.color);
-    let _x = x * scaleUpFactor()
-    let _y = y * scaleUpFactor()
-    socket.sendFill(_x, _y, gameState.state.color)
-
-}
-
-function drawAction(x1, y1, x2, y2) {
-    const { localColor, lineWidth, localLineWidth, localTool } = gameState.state
-    let _color
-    if (localTool === RUBBER) {
-        _color = "#ffffff";
-    } else {
-        _color = localColor
-    }
-
-    canvas.drawLine(x1, y1, x2, y2, _color, localLineWidth);
-
-    let _x1 = x1 * scaleUpFactor()
-    let _y1 = y1 * scaleUpFactor()
-    let _x2 = x2 * scaleUpFactor()
-    let _y2 = y2 * scaleUpFactor()
-    let _lineWidth = lineWidth * scaleUpFactor()
-    socket.sendLine(_x1, _y1, _x2, _y2, _color, _lineWidth)
-}
-
-// const noSoundIcon = "🔇";
-// const soundIcon = "🔊";
-// const soundToggleLabel = document.getElementById("sound-toggle-label");
-// let sound = localStorage.getItem("sound") === "true";
-//  updateSoundIcon();
-
-/*  function toggleSound() {
-      sound = !sound;
-      localStorage.setItem("sound", sound.toString());
-      updateSoundIcon();
-  }
- 
-  function updateSoundIcon() {
-      if (sound) {
-          soundToggleLabel.innerText = soundIcon;
-      } else {
-          soundToggleLabel.innerText = noSoundIcon;
-      }
-  }*/
-
-//The drawing board has a base size. This base size results in a certain ratio
-//that the actual canvas has to be resized accordingly too. This is needed
-//since not every client has the same screensize.
-let boardRatio = window.baseWidth / window.baseHeight;
 
 function handleCanvasResize() {
     drawingBoard.width = drawingBoard.clientWidth;
     drawingBoard.height = drawingBoard.clientHeight;
     setLineWidthAction(gameState.state.localLineWidthUnscaled);
-    // chat.style.maxHeight = drawingBoard.height + "px";
 }
 
 canvas.setContext(drawingBoard.getContext("2d"))
 
-const scaleUpFactor = () => window.baseWidth / drawingBoard.clientWidth;
-const scaleDownFactor = () => drawingBoard.clientWidth / window.baseWidth;
-
-
-
-function setColorAction(value) {
-    let localColor
-    if (value === undefined) {
-        localColor = colorPicker.value
-    } else {
-        value = rgbStr2hex(value)
-        colorPicker.value = value;
-        localColor = value
-    }
-    gameState.setState({ localColor });
-
-    document.documentElement.style.setProperty('--color', value);
-}
-
-function setLineWidthAction(value) {
-    gameState.setState({
-        localLineWidthUnscaled: value,
-        localLineWidth: value * scaleDownFactor(),
-    })
-}
-
-function chooseToolAction(value) {
-    if (value === PEN || value === RUBBER || value === FILL_BUCKET) {
-        gameState.setState({ localTool: value })
-    }
-}
-
 
 // on set line width
 gameState.registerHandler((state, prevState) => {
-    if (state.localLineWidth == prevState.localLineWidth) {
+    const { localLineWidth, localColor } = state
+    if (localLineWidth == prevState.localLineWidth
+        && localColor == prevState.localColor) {
         return
     }
     let cursorColor;
     let borderColor = "#FFFFFF";
-    if (state.localColor.startsWith("#")) {
-        cursorColor = hexToRgbStr(state.localColor);
-        borderColor = contrastShade(hexToRgb(state.localColor))
+    if (localColor.startsWith("#")) {
+        cursorColor = hexToRgbStr(localColor);
+        borderColor = contrastShade(hexToRgb(localColor))
     } else {
-        cursorColor = state.localColor;
+        cursorColor = localColor;
     }
 
-    let circleSize = state.localLineWidth * scaleUpFactor();
-    drawingBoard.style.cursor = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"" + (circleSize + 2) + "\" height=\"" + (circleSize + 2) + "\"><circle cx=\"" + (circleSize / 2) + "\" cy=\"" + (circleSize / 2) + "\" r=\"" + (circleSize / 2) + "\" style=\"fill: " + cursorColor + "; stroke: " + borderColor + ";\"/></svg>') " + (circleSize / 2) + " " + (circleSize / 2) + ", auto";
+    console.log(cursorColor, borderColor)
+
+    let circleSize = localLineWidth * canvas.scaleUpFactor();
+
+    // document.documentElement.style.setProperty('--color', value);
+
+
+    document.getElementById('draw-tool').style.backgroundColor = cursorColor
+    document.getElementById('fill-tool').style.backgroundColor = cursorColor
+
+    drawingBoard.style.cursor = `url('data:image/svg+xml;utf8,
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                version="1.1" 
+                width="${circleSize + 2}"
+                height="${circleSize + 2}">
+                    <circle 
+                        cx="${circleSize / 2}" 
+                        cy="${circleSize / 2}" 
+                        r="${circleSize / 2}" 
+                        fill="${cursorColor}" 
+                        stroke="${borderColor}"
+                        />
+            </svg>
+        ') ${circleSize / 2} ${circleSize / 2}, auto`;
 })
 
 
@@ -288,10 +136,14 @@ socket.addHandler("reset-username", (pkt) => {
     document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 })
 socket.addHandler("line", (pkt) => {
-    canvas.drawLine(pkt.data.fromX * scaleDownFactor(), pkt.data.fromY * scaleDownFactor(), pkt.data.toX * scaleDownFactor(), pkt.data.toY * scaleDownFactor(), pkt.data.color, pkt.data.lineWidth * scaleDownFactor());
+    canvas.drawLine(
+        ...canvas.scaleDown(pkt.data.fromX, pkt.data.fromY, pkt.data.toX, pkt.data.toY),
+        pkt.data.color,
+        canvas.scaleDown(pkt.data.lineWidth)[0]
+    );
 })
 socket.addHandler("fill", (pkt) => {
-    canvas.fill(pkt.data.x * scaleDownFactor(), pkt.data.y * scaleDownFactor(), pkt.data.color);
+    canvas.fill(...canvas.scaleDown(pkt.data.x, pkt.data.y), pkt.data.color);
 })
 socket.addHandler("clear-drawing-board", (pkt) => {
     canvas.clear()
@@ -412,9 +264,18 @@ function applyDrawData(drawElements) {
     drawElements.forEach(function (drawElement) {
         let drawData = drawElement.data;
         if (drawElement.type === "fill") {
-            canvas.fill(drawData.x * scaleDownFactor(), drawData.y * scaleDownFactor(), drawData.color);
+            canvas.fill(...canvas.scaleDown(drawData.x, drawData.y), drawData.color);
         } else if (drawElement.type === "line") {
-            canvas.drawLine(drawData.fromX * scaleDownFactor(), drawData.fromY * scaleDownFactor(), drawData.toX * scaleDownFactor(), drawData.toY * scaleDownFactor(), drawData.color, drawData.lineWidth * scaleDownFactor());
+            canvas.drawLine(
+                ...canvas.scaleDown(
+                    drawData.fromX,
+                    drawData.fromY,
+                    drawData.toX,
+                    drawData.toY,
+                ),
+                drawData.color,
+                canvas.scaleDown(drawData.lineWidth)[0]
+            );
         } else {
             console.log("Unknown draw element type: " + drawData.type)
         }
@@ -562,20 +423,21 @@ document.getElementById('word-button-zero').onclick = e => chooseWordAction(0)
 document.getElementById('word-button-one').onclick = e => chooseWordAction(1)
 document.getElementById('word-button-two').onclick = e => chooseWordAction(2)
 
-document.getElementById('small-circle').onclick = e => setLineWidthAction(15)
-document.getElementById('medium-circle').onclick = e => setLineWidthAction(30)
-document.getElementById('huge-circle').onclick = e => setLineWidthAction(40)
-
 document.getElementById('draw-tool').onclick = e => chooseToolAction(PEN)
 document.getElementById('fill-tool').onclick = e => chooseToolAction(FILL_BUCKET)
 document.getElementById('erase-tool').onclick = e => chooseToolAction(RUBBER)
 document.getElementById('clear-tool').onclick = e => clearAction()
+
+document.getElementById('color-picker').onchange = setColorAction
+document.getElementById('message-form').onsubmit = e => { e.preventDefault(); sendMessage() };
 
 Array.from(document.getElementsByClassName('color-button')).forEach(
     el => {
         el.onclick = e => setColorAction(e.target.style.backgroundColor)
     }
 )
+
+registerCircles()
 
 setLineWidthAction(5);
 

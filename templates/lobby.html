@@ -124,7 +124,7 @@
         </div>
         <div class="guess-input">
             <div class="guess-title">Type in box to guess:</div>
-            <form class="message-input-form" onsubmit="return sendMessage()">
+            <form class="message-input-form" id="message-form">
                 <input id="message-input" type="text" autocomplete="off" placeholder="Type in box to guess:" />
             </form>
         </div>
@@ -181,7 +181,7 @@
             </div>
             <div>
                 <div class="group-color">
-                    <input class="show-color" type="color" id="color-picker" onchange="setColor()" value="#000000"
+                    <input class="show-color" type="color" id="color-picker" value="#000000"
                         alt="Current color (Click to change)" title="Current color (Click to change)">
                 </div>
                 <div class="color-button-group">

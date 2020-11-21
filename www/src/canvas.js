@@ -102,3 +102,10 @@ function setPixel(imageData, x, y, color) {
     imageData.data[offset + 2] = color.b;
     imageData.data[offset + 3] = 255; // alpha
 }
+
+
+
+export const scaleUpFactor = () => window.baseWidth / drawingBoard.clientWidth;
+export const scaleDownFactor = () => drawingBoard.clientWidth / window.baseWidth;
+
+export const scaleDown = (...vars) => vars.map(x => x * scaleDownFactor())

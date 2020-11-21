@@ -21,7 +21,7 @@ export function hexToRgb(hex) {
 // returns an object
 export function hexToRgbStr(hex) {
     let color = hexToRgb(hex)
-    return "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")";
+    return "rgb(" + color.r + "," + color.g + "," + color.b + ")";
 }
 
 export function contrastShade(colorObj) {

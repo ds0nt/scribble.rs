@@ -1,5 +1,5 @@
 
-export default class Socket {
+class Socket {
     handlers = {}
     constructor() {
         // let wsURL(location.protocol === 'https:' ? "wss://" : "ws://") + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId
@@ -84,3 +84,5 @@ export default class Socket {
         this.socket.send(JSON.stringify(drawInstruction));
     }
 }
+
+export default Socket

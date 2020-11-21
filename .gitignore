@@ -1,7 +1,13 @@
 pkged.go
 
 scribblers
-scribble.rs
+
+pkged.go
+
+resources/game.js
+resources/game.js.map
+
+www/dist/*
+www/node_modules
 
 .vscode/
-www/node_modules
