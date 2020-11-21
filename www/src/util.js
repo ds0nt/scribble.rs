@@ -31,10 +31,11 @@ export function contrastShade(colorObj) {
         0.114 * (colorObj.b * colorObj.b)
     );
 
+    let color
     if (hsp > 127.5) {
-        borderColor = "rgb(0,0,0)";
+        color = "rgb(0,0,0)";
     } else {
-        borderColor = "rgb(255,255,255)";
+        color = "rgb(255,255,255)";
     }
-    return borderColor
+    return color
 }

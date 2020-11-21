@@ -4,8 +4,8 @@ class GameState {
     state = {
         allowDrawing: false,
         localColor: "#000000",
-        localLineWidth: 0,
-        localLineWidthUnscaled: 0,
+        localLineWidth: 5,
+        localLineWidthUnscaled: 5,
         localTool: PEN,
 
         ownID: null,

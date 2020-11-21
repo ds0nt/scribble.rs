@@ -1,15 +1,14 @@
-
-
 import * as actions from '../actions'
+import gameState from '../game-state'
 
 //
 // circles
 //
 
 export function registerCircles() {
-    document.getElementById('small-circle').style.backgroundColor = cursorColor
-    document.getElementById('medium-circle').style.backgroundColor = cursorColor
-    document.getElementById('huge-circle').style.backgroundColor = cursorColor
+    document.getElementById('small-circle').style.backgroundColor = gameState.state.localColor
+    document.getElementById('medium-circle').style.backgroundColor = gameState.state.localColor
+    document.getElementById('huge-circle').style.backgroundColor = gameState.state.localColor
 
     document.getElementById('small-circle').onclick = e => actions.setLineWidthAction(15)
     document.getElementById('medium-circle').onclick = e => actions.setLineWidthAction(30)
@@ -33,7 +32,7 @@ export function registerCircles() {
 
         console.log(cursorColor, borderColor)
 
-        let circleSize = localLineWidth * canvas.scaleUpFactor();
+        let circleSize = localLineWidth * elements.scaleUpFactor();
 
         // document.documentElement.style.setProperty('--color', value);
 

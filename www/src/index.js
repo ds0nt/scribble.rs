@@ -1,11 +1,12 @@
 import * as canvas from './canvas'
 import * as audio from './audio'
+import * as elements from './elements'
+import { drawingBoard } from './elements'
 
 import { PEN, RUBBER, FILL_BUCKET } from './constants';
-import gameState from './game-state'
 
-import Socket from './socket.js';
-window.socket = new Socket()
+import gameState from './game-state'
+import socket from './socket.js';
 
 import {
     hexToRgb,
@@ -16,28 +17,6 @@ import { registerCircles } from './components/tools';
 import { setLineWidthAction, drawAction, fillAction, chooseWordAction, chooseToolAction, clearAction, setColorAction } from './actions';
 
 
-
-const playerContainer = document.getElementById("player-container");
-const wordContainer = document.getElementById("word-container");
-const roundsSpan = document.getElementById("rounds");
-
-const timeLeft = document.getElementById("time-left");
-const drawingBoard = document.getElementById("drawing-board");
-const startDialog = document.getElementById("start-dialog");
-
-const wordDialog = document.getElementById("word-dialog");
-const wordButtonZero = document.getElementById("word-button-zero");
-const wordButtonOne = document.getElementById("word-button-one");
-const wordButtonTwo = document.getElementById("word-button-two");
-
-
-function handleCanvasResize() {
-    drawingBoard.width = drawingBoard.clientWidth;
-    drawingBoard.height = drawingBoard.clientHeight;
-    setLineWidthAction(gameState.state.localLineWidthUnscaled);
-}
-
-canvas.setContext(drawingBoard.getContext("2d"))
 
 
 // on set line width
@@ -58,7 +37,7 @@ gameState.registerHandler((state, prevState) => {
 
     console.log(cursorColor, borderColor)
 
-    let circleSize = localLineWidth * canvas.scaleUpFactor();
+    let circleSize = localLineWidth * elements.scaleUpFactor();
 
     // document.documentElement.style.setProperty('--color', value);
 
@@ -98,7 +77,7 @@ socket.addHandler("ready", (pkt) => {
 
     if (ready.round === 0 && ready.ownerId === ready.playerId) {
         show("#start-dialog")
-        startDialog.style.display = "block";
+        elements.startDialog.style.display = "block";
     }
 
     if (ready.players && ready.players.length) {
@@ -137,13 +116,13 @@ socket.addHandler("reset-username", (pkt) => {
 })
 socket.addHandler("line", (pkt) => {
     canvas.drawLine(
-        ...canvas.scaleDown(pkt.data.fromX, pkt.data.fromY, pkt.data.toX, pkt.data.toY),
+        ...elements.scaleDown(pkt.data.fromX, pkt.data.fromY, pkt.data.toX, pkt.data.toY),
         pkt.data.color,
-        canvas.scaleDown(pkt.data.lineWidth)[0]
+        elements.scaleDown(pkt.data.lineWidth)[0]
     );
 })
 socket.addHandler("fill", (pkt) => {
-    canvas.fill(...canvas.scaleDown(pkt.data.x, pkt.data.y), pkt.data.color);
+    canvas.fill(...elements.scaleDown(pkt.data.x, pkt.data.y), pkt.data.color);
 })
 socket.addHandler("clear-drawing-board", (pkt) => {
     canvas.clear()
@@ -152,7 +131,7 @@ socket.addHandler("next-turn", (pkt) => {
     $("#cc-toolbox").css({ 'transform': 'translateX(-150%)' });
     $("#player-container").css({ 'transform': 'translateX(0)' });
     //If a player doesn't choose, the dialog will still be up.
-    wordDialog.style.display = "none";
+    elements.wordDialog.style.display = "none";
     audio.endTurn()
 
     canvas.clear();
@@ -161,7 +140,7 @@ socket.addHandler("next-turn", (pkt) => {
     applyPlayers(pkt.data.players);
 
     //We clear this, since there's no word chosen right now.
-    wordContainer.innerHTML = "";
+    elements.wordContainer.innerHTML = "";
 
     gameState.setState({
         roundEndTime: pkt.data.roundEndTime,
@@ -170,10 +149,10 @@ socket.addHandler("next-turn", (pkt) => {
 })
 socket.addHandler("your-turn", (pkt) => {
     audio.yourTurn()
-    wordButtonZero.textContent = pkt.data[0];
-    wordButtonOne.textContent = pkt.data[1];
-    wordButtonTwo.textContent = pkt.data[2];
-    wordDialog.style.display = "block";
+    elements.wordButtonZero.textContent = pkt.data[0];
+    elements.wordButtonOne.textContent = pkt.data[1];
+    elements.wordButtonTwo.textContent = pkt.data[2];
+    elements.wordDialog.style.display = "block";
     show("#word-dialog")
     $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
     $("#player-container").css({ 'transform': 'translateX(-150%)' });
@@ -183,9 +162,9 @@ socket.addHandler("your-turn", (pkt) => {
 window.setInterval(function () {
     let secondsLeft = Math.floor((gameState.state.roundEndTime - (new Date().getTime())) / 1000);
     if (secondsLeft >= 0) {
-        timeLeft.innerText = secondsLeft;
+        elements.timeLeft.innerText = secondsLeft;
     } else {
-        timeLeft.innerText = "∞";
+        elements.timeLeft.innerText = "∞";
     }
 }, 500);
 
@@ -197,7 +176,7 @@ window.setInterval(function () {
 //     </div> 
 function applyPlayers(players) {
     const ownID = gameState.state.ownID
-    playerContainer.innerHTML = "";
+    elements.playerContainer.innerHTML = "";
     players.forEach(function (player) {
         if (!player.connected) {
             return;
@@ -233,27 +212,27 @@ function applyPlayers(players) {
         newPlayerElement += '</div></div></div>';
         let newPlayer = document.createRange().createContextualFragment(newPlayerElement);
         console.log(newPlayer);
-        playerContainer.appendChild(newPlayer);
+        elements.playerContainer.appendChild(newPlayer);
 
     });
 }
 
 function applyRounds(round, maxRound) {
-    roundsSpan.innerText = 'Round ' + round + ' of ' + maxRound;
+    elements.roundsSpan.innerText = 'Round ' + round + ' of ' + maxRound;
 }
 
 function applyWordHints(wordHints) {
-    wordContainer.innerHTML = "";
+    elements.wordContainer.innerHTML = "";
     //If no hint has been revealed
     wordHints.forEach(function (hint) {
         if (hint.character === 0) {
-            wordContainer.innerHTML += '<span class="guess-letter guess-letter-underline">&nbsp;</span>';
+            elements.wordContainer.innerHTML += '<span class="guess-letter guess-letter-underline">&nbsp;</span>';
         } else {
             let char = String.fromCharCode(hint.character);
             if (hint.underline) {
-                wordContainer.innerHTML += '<span class="guess-letter guess-letter-underline">' + char + '</span>'
+                elements.wordContainer.innerHTML += '<span class="guess-letter guess-letter-underline">' + char + '</span>'
             } else {
-                wordContainer.innerHTML += '<span class="guess-letter">' + char + '</span>';
+                elements.wordContainer.innerHTML += '<span class="guess-letter">' + char + '</span>';
             }
         }
     });
@@ -264,17 +243,17 @@ function applyDrawData(drawElements) {
     drawElements.forEach(function (drawElement) {
         let drawData = drawElement.data;
         if (drawElement.type === "fill") {
-            canvas.fill(...canvas.scaleDown(drawData.x, drawData.y), drawData.color);
+            canvas.fill(...elements.scaleDown(drawData.x, drawData.y), drawData.color);
         } else if (drawElement.type === "line") {
             canvas.drawLine(
-                ...canvas.scaleDown(
+                ...elements.scaleDown(
                     drawData.fromX,
                     drawData.fromY,
                     drawData.toX,
                     drawData.toY,
                 ),
                 drawData.color,
-                canvas.scaleDown(drawData.lineWidth)[0]
+                elements.scaleDown(drawData.lineWidth)[0]
             );
         } else {
             console.log("Unknown draw element type: " + drawData.type)
@@ -282,137 +261,13 @@ function applyDrawData(drawElements) {
     });
 }
 
-let cursorDrawing = false;
-let cursorX = 0;
-let cursorY = 0;
-
-// Touch input
-let touchID = 0;
-
-drawingBoard.ontouchstart = function (e) {
-    const { allowDrawing, localTool } = gameState.state
-
-    if (!cursorDrawing && allowDrawing) {
-        touchID = e.touches[0].identifier;
-
-        if (allowDrawing && localTool !== 2) {
-            // calculate the offset coordinates based on client touch position and drawing board client origin
-            let clientRect = drawingBoard.getBoundingClientRect();
-            cursorX = (e.touches[0].clientX - clientRect.left);
-            cursorY = (e.touches[0].clientY - clientRect.top);
-
-            cursorDrawing = true;
-        }
-    }
-};
-
-drawingBoard.ontouchmove = function (e) {
-    const { allowDrawing } = gameState.state
-    //FIXME Explanation? Does this prevent moving the page?
-    e.preventDefault();
-
-    if (allowDrawing && cursorDrawing) {
-        // find touch with correct ID
-        for (let i = e.changedTouches.length - 1; i >= 0; i--) {
-            if (e.changedTouches[i].identifier === touchID) {
-                let touch = e.changedTouches[i];
-
-                // calculate the offset coordinates based on client touch position and drawing board client origin
-                let clientRect = drawingBoard.getBoundingClientRect();
-                let offsetX = (touch.clientX - clientRect.left);
-                let offsetY = (touch.clientY - clientRect.top);
-
-                // drawing functions must check for context boundaries
-                drawAction(cursorX, cursorY, offsetX, offsetY);
-                cursorX = offsetX;
-                cursorY = offsetY;
-
-                return;
-            }
-        }
-    }
-};
-
-drawingBoard.ontouchcancel = function (e) {
-    if (cursorDrawing) {
-        // find touch with correct ID
-        for (let i = e.changedTouches.length - 1; i >= 0; i--) {
-            if (e.changedTouches[i].identifier === touchID) {
-                cursorDrawing = false;
-                return;
-            }
-        }
-    }
-}
-drawingBoard.ontouchend = drawingBoard.ontouchcancel
-
-// Mouse input
-drawingBoard.onmousedown = function (e) {
-    const { allowDrawing, localTool } = gameState.state
-
-    if (allowDrawing && e.button === 0 && localTool !== 2) {
-        cursorX = e.offsetX;
-        cursorY = e.offsetY;
-
-        cursorDrawing = true;
-    }
-
-    return false;
-};
-
-// This is executed even if the mouse is not above the browser anymore.
-window.onmouseup = function (e) {
-    if (cursorDrawing === true) {
-        cursorDrawing = false;
-    }
-};
-
-drawingBoard.onmousemove = function (e) {
-    const { allowDrawing } = gameState.state
-
-    if (allowDrawing && cursorDrawing === true && e.button === 0) {
-        // calculate the offset coordinates based on client mouse position and drawing board client origin
-        let clientRect = drawingBoard.getBoundingClientRect();
-        let offsetX = (e.clientX - clientRect.left);
-        let offsetY = (e.clientY - clientRect.top);
-
-        // drawing functions must check for context boundaries
-        drawAction(cursorX, cursorY, offsetX, offsetY);
-        cursorX = offsetX;
-        cursorY = offsetY;
-    }
-};
-
-// necessary for mousemove to not use the previous exit coordinates.
-drawingBoard.onmouseenter = function (e) {
-    cursorX = e.offsetX;
-    cursorY = e.offsetY;
-};
-
-drawingBoard.onclick = function (e) {
-    const { allowDrawing, localTool } = gameState.state
-
-    if (allowDrawing && e.button === 0) {
-        if (localTool === 2) {
-            fillAction(e.offsetX, e.offsetY)
-        } else {
-            drawAction(e.offsetX, e.offsetY, e.offsetX, e.offsetY);
-        }
-        cursorDrawing = false;
-    }
-};
-
-//Call intially to correct initial state
-handleCanvasResize();
-window.addEventListener("resize", handleCanvasResize, false);
-
 function startGame() {
     socket.sendStart()
     //Tas: not needed
     //startDialog.style.display = "hidden";
     hide("#start-dialog");
     show("#word-dialog");
-    wordDialog.style.display = "block";
+    elements.wordDialog.style.display = "block";
 }
 
 
@@ -439,6 +294,5 @@ Array.from(document.getElementsByClassName('color-button')).forEach(
 
 registerCircles()
 
-setLineWidthAction(5);
 
 socket.open()

@@ -1,6 +1,6 @@
 
 # recompile game.js if node_modules or src changes
-resources/game.js: www/node_modules www/src/* www/package.json www/.babelrc www/webpack.config.js
+resources/game.js: www/node_modules www/src www/package.json www/.babelrc www/webpack.config.js
 	cd www && yarn install && npm run-script build
 	cp -v www/dist/game.js resources/game.js
 	cp -v www/dist/game.js.map resources/game.js.map

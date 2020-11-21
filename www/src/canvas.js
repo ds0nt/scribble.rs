@@ -1,11 +1,27 @@
-
+import { scaleDownFactor } from './elements'
 import { hexToRgb } from './util.js'
+import { drawingBoard } from './elements'
+import * as actions from './actions'
+import { PEN, RUBBER, FILL_BUCKET } from './constants';
 
-var context = null
+import gameState from './game-state.js';
 
-export function setContext(_context) {
-    context = _context
+var context = drawingBoard.getContext("2d")
+
+
+function handleCanvasResize() {
+    drawingBoard.width = drawingBoard.clientWidth;
+    drawingBoard.height = drawingBoard.clientHeight;
+    
+    gameState.setState({
+        localLineWidthUnscaled: gameState.state.localLineWidthUnscaled,
+        localLineWidth: gameState.state.localLineWidthUnscaled * scaleDownFactor(),
+    })
 }
+
+handleCanvasResize();
+window.addEventListener("resize", handleCanvasResize, false);
+
 
 export function clear() {
     context.fillStyle = "#FFFFFF";
@@ -77,9 +93,9 @@ function drawBresenhamLine(imageData, x0, y0, x1, y1, color) {
 function generateCircleMap(radius) {
     let circleData = [];
 
-    for (x = 0; x < 2 * radius; x++) {
+    for (let x = 0; x < 2 * radius; x++) {
         circleData[x] = [];
-        for (y = 0; y < 2 * radius; y++) {
+        for (let y = 0; y < 2 * radius; y++) {
             const distanceToRadius = Math.sqrt(Math.pow(radius - x, 2) + Math.pow(radius - y, 2));
             if (distanceToRadius > radius) {
                 circleData[x][y] = 0;
@@ -105,7 +121,123 @@ function setPixel(imageData, x, y, color) {
 
 
 
-export const scaleUpFactor = () => window.baseWidth / drawingBoard.clientWidth;
-export const scaleDownFactor = () => drawingBoard.clientWidth / window.baseWidth;
 
-export const scaleDown = (...vars) => vars.map(x => x * scaleDownFactor())
+let cursorDrawing = false;
+let cursorX = 0;
+let cursorY = 0;
+
+// Touch input
+let touchID = 0;
+
+drawingBoard.ontouchstart = function (e) {
+    const { allowDrawing, localTool } = gameState.state
+
+    if (!cursorDrawing && allowDrawing) {
+        touchID = e.touches[0].identifier;
+
+        if (allowDrawing && localTool !== 2) {
+            // calculate the offset coordinates based on client touch position and drawing board client origin
+            let clientRect = drawingBoard.getBoundingClientRect();
+            cursorX = (e.touches[0].clientX - clientRect.left);
+            cursorY = (e.touches[0].clientY - clientRect.top);
+
+            cursorDrawing = true;
+        }
+    }
+};
+
+drawingBoard.ontouchmove = function (e) {
+    const { allowDrawing } = gameState.state
+    //FIXME Explanation? Does this prevent moving the page?
+    e.preventDefault();
+
+    if (allowDrawing && cursorDrawing) {
+        // find touch with correct ID
+        for (let i = e.changedTouches.length - 1; i >= 0; i--) {
+            if (e.changedTouches[i].identifier === touchID) {
+                let touch = e.changedTouches[i];
+
+                // calculate the offset coordinates based on client touch position and drawing board client origin
+                let clientRect = drawingBoard.getBoundingClientRect();
+                let offsetX = (touch.clientX - clientRect.left);
+                let offsetY = (touch.clientY - clientRect.top);
+
+                // drawing functions must check for context boundaries
+                actions.drawAction(cursorX, cursorY, offsetX, offsetY);
+                cursorX = offsetX;
+                cursorY = offsetY;
+
+                return;
+            }
+        }
+    }
+};
+
+drawingBoard.ontouchcancel = function (e) {
+    if (cursorDrawing) {
+        // find touch with correct ID
+        for (let i = e.changedTouches.length - 1; i >= 0; i--) {
+            if (e.changedTouches[i].identifier === touchID) {
+                cursorDrawing = false;
+                return;
+            }
+        }
+    }
+}
+drawingBoard.ontouchend = drawingBoard.ontouchcancel
+
+// Mouse input
+drawingBoard.onmousedown = function (e) {
+    const { allowDrawing, localTool } = gameState.state
+
+    if (allowDrawing && e.button === 0 && localTool !== 2) {
+        cursorX = e.offsetX;
+        cursorY = e.offsetY;
+
+        cursorDrawing = true;
+    }
+
+    return false;
+};
+
+// This is executed even if the mouse is not above the browser anymore.
+window.onmouseup = function (e) {
+    if (cursorDrawing === true) {
+        cursorDrawing = false;
+    }
+};
+
+drawingBoard.onmousemove = function (e) {
+    const { allowDrawing } = gameState.state
+
+    if (allowDrawing && cursorDrawing === true && e.button === 0) {
+        // calculate the offset coordinates based on client mouse position and drawing board client origin
+        let clientRect = drawingBoard.getBoundingClientRect();
+        let offsetX = (e.clientX - clientRect.left);
+        let offsetY = (e.clientY - clientRect.top);
+
+        // drawing functions must check for context boundaries
+        actions.drawAction(cursorX, cursorY, offsetX, offsetY);
+        cursorX = offsetX;
+        cursorY = offsetY;
+    }
+};
+
+// necessary for mousemove to not use the previous exit coordinates.
+drawingBoard.onmouseenter = function (e) {
+    cursorX = e.offsetX;
+    cursorY = e.offsetY;
+};
+
+drawingBoard.onclick = function (e) {
+    const { allowDrawing, localTool } = gameState.state
+
+    if (allowDrawing && e.button === 0) {
+        if (localTool === 2) {
+            actions.fillAction(e.offsetX, e.offsetY)
+        } else {
+            actions.drawAction(e.offsetX, e.offsetY, e.offsetX, e.offsetY);
+        }
+        cursorDrawing = false;
+    }
+};

@@ -85,4 +85,4 @@ class Socket {
     }
 }
 
-export default Socket
+export default new Socket()
