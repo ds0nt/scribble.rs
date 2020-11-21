@@ -1,8 +1,5 @@
 
-const messageContainer = document.getElementById("message-container");
-const messageInput = document.getElementById("message-input");
-
-function applyMessage(styleClass, author, message) {
+export function applyMessage(styleClass, author, message) {
     console.log(message);
     if (message === "Game over. Type !start again to start a new round.") {
         show("#score-dialog");

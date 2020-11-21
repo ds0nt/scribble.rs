@@ -17,4 +17,9 @@ export const scaleUpFactor = () => window.baseWidth / drawingBoard.clientWidth;
 export const scaleDownFactor = () => drawingBoard.clientWidth / window.baseWidth;
 export const scaleDown = (...vars) => vars.map(x => x * scaleDownFactor())
 
-export const messageInput = "unimplemented"
+export const messageContainer = document.getElementById("message-container");
+export const messageInput = document.getElementById("message-input");
+
+export const colorPicker = document.getElementById("color-picker");
+export const centerDialog = document.getElementById("center-dialog");
+export const chat = document.getElementById("chat");

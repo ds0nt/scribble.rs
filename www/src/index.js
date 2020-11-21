@@ -7,7 +7,7 @@ import { PEN, RUBBER, FILL_BUCKET } from './constants';
 
 import gameState from './game-state'
 import socket from './socket.js';
-
+import {applyMessage} from './components/messages'
 import {
     hexToRgb,
     hexToRgbStr,
@@ -42,8 +42,8 @@ gameState.registerHandler((state, prevState) => {
     // document.documentElement.style.setProperty('--color', value);
 
 
-    document.getElementById('draw-tool').style.backgroundColor = cursorColor
-    document.getElementById('fill-tool').style.backgroundColor = cursorColor
+    document.getElementById('draw-tool').style.color = cursorColor
+    document.getElementById('fill-tool').style.color = cursorColor
 
     drawingBoard.style.cursor = `url('data:image/svg+xml;utf8,
             <svg 
@@ -100,13 +100,13 @@ socket.addHandler("update-wordhint", (pkt) => {
     applyWordHints(pkt.data);
 })
 socket.addHandler("message", (pkt) => {
-    applyMessage("", pkt.data.author, pkt.data.content);
+    messages.applyMessage("", pkt.data.author, pkt.data.content);
 })
 socket.addHandler("system-message", (pkt) => {
-    applyMessage("system-message", "System", pkt.data);
+    messages.applyMessage("system-message", "System", pkt.data);
 })
 socket.addHandler("non-guessing-player-message", (pkt) => {
-    applyMessage("non-guessing-player-message", pkt.data.author, pkt.data.content);
+    messages.applyMessage("non-guessing-player-message", pkt.data.author, pkt.data.content);
 })
 socket.addHandler("persist-username", (pkt) => {
     document.cookie = "username=" + pkt.data + ";expires=Tue, 19 Jan 2038 00:00:00 UTC;path=/;samesite=strict";

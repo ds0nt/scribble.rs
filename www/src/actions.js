@@ -3,6 +3,7 @@ import * as elements from './elements'
 import gameState from './game-state'
 import socket from './socket'
 import { PEN, RUBBER, FILL_BUCKET } from './constants';
+import { rgbStr2hex } from './util';
 
 export function clearAction() {
     canvas.clear();
@@ -61,10 +62,10 @@ export function drawAction(x1, y1, x2, y2) {
 export function setColorAction(value) {
     let localColor
     if (value === undefined) {
-        localColor = colorPicker.value
+        localColor = elements.colorPicker.value
     } else {
         value = rgbStr2hex(value)
-        colorPicker.value = value;
+        elements.colorPicker.value = value;
         localColor = value
     }
     gameState.setState({ localColor });

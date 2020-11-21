@@ -57,8 +57,3 @@ export function registerCircles() {
         ') ${circleSize / 2} ${circleSize / 2}, auto`;
     })
 }
-
-
-//const chat = document.getElementById("chat");
-// const colorPicker = document.getElementById("color-picker");
-// const centerDialog = document.getElementById("center-dialog");
