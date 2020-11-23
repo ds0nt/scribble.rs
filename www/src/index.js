@@ -150,7 +150,7 @@ function applyPlayers(players) {
         }
         newPlayerElement +=
             '<span class="score">' + player.score + '</span>' +
-            '<span class="last-turn-score">(Last turn: ' + player.lastScore + ')</span>' +
+            // '<span class="last-turn-score">(Last turn: ' + player.lastScore + ')</span>' +
             '</div>';
         if (player.state === 1) {
             newPlayerElement += '<span>✏️</span>';
