@@ -1,66 +1,13 @@
 import * as canvas from './canvas'
 import * as audio from './audio'
 import * as elements from './elements'
-import { drawingBoard } from './elements'
-
-import { PEN, RUBBER, FILL_BUCKET } from './constants';
 
 import gameState from './game-state'
 import socket from './socket.js';
-import {applyMessage} from './components/messages'
-import {
-    hexToRgb,
-    hexToRgbStr,
-    contrastShade,
-} from './util.js'
-import { registerCircles } from './components/tools';
-import { setLineWidthAction, drawAction, fillAction, chooseWordAction, chooseToolAction, clearAction, setColorAction } from './actions';
 
-
-
-
-// on set line width
-gameState.registerHandler((state, prevState) => {
-    const { localLineWidth, localColor } = state
-    if (localLineWidth == prevState.localLineWidth
-        && localColor == prevState.localColor) {
-        return
-    }
-    let cursorColor;
-    let borderColor = "#FFFFFF";
-    if (localColor.startsWith("#")) {
-        cursorColor = hexToRgbStr(localColor);
-        borderColor = contrastShade(hexToRgb(localColor))
-    } else {
-        cursorColor = localColor;
-    }
-
-    console.log(cursorColor, borderColor)
-
-    let circleSize = localLineWidth * elements.scaleUpFactor();
-
-    // document.documentElement.style.setProperty('--color', value);
-
-
-    document.getElementById('draw-tool').style.color = cursorColor
-    document.getElementById('fill-tool').style.color = cursorColor
-
-    drawingBoard.style.cursor = `url('data:image/svg+xml;utf8,
-            <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                version="1.1" 
-                width="${circleSize + 2}"
-                height="${circleSize + 2}">
-                    <circle 
-                        cx="${circleSize / 2}" 
-                        cy="${circleSize / 2}" 
-                        r="${circleSize / 2}" 
-                        fill="${cursorColor}" 
-                        stroke="${borderColor}"
-                        />
-            </svg>
-        ') ${circleSize / 2} ${circleSize / 2}, auto`;
-})
+import { registerMessages} from './components/messages'
+import { registerCircles, registerTools } from './components/tools';
+import { registerOverlay } from './components/overlay';
 
 
 socket.addHandler("ready", (pkt) => {
@@ -90,6 +37,7 @@ socket.addHandler("ready", (pkt) => {
         applyWordHints(ready.wordHints)
     }
 })
+
 socket.addHandler("update-players", (pkt) => {
     applyPlayers(pkt.data);
 })
@@ -261,38 +209,25 @@ function applyDrawData(drawElements) {
     });
 }
 
-function startGame() {
-    socket.sendStart()
-    //Tas: not needed
-    //startDialog.style.display = "hidden";
-    hide("#start-dialog");
-    show("#word-dialog");
-    elements.wordDialog.style.display = "block";
+export function applyMessage(styleClass, author, message) {
+    console.log(message);
+    if (message === "Game over. Type !start again to start a new round.") {
+        show("#score-dialog");
+        return;
+    }
+    if (messageContainer.childElementCount >= 100) {
+        messageContainer.removeChild(messageContainer.firstChild)
+    }
+
+    messageContainer.innerHTML += `<div class="message ` + styleClass + `">
+                            <span class="chat-name">` + author + `</span>
+                            <span class="message-content">` + message + `</span>
+                        </div>`;
 }
 
-
-// bind onclicks here because html function calling on window scope is annoying.
-document.getElementById('start-game-button').onclick = e => startGame()
-
-document.getElementById('word-button-zero').onclick = e => chooseWordAction(0)
-document.getElementById('word-button-one').onclick = e => chooseWordAction(1)
-document.getElementById('word-button-two').onclick = e => chooseWordAction(2)
-
-document.getElementById('draw-tool').onclick = e => chooseToolAction(PEN)
-document.getElementById('fill-tool').onclick = e => chooseToolAction(FILL_BUCKET)
-document.getElementById('erase-tool').onclick = e => chooseToolAction(RUBBER)
-document.getElementById('clear-tool').onclick = e => clearAction()
-
-document.getElementById('color-picker').onchange = setColorAction
-document.getElementById('message-form').onsubmit = e => { e.preventDefault(); sendMessage() };
-
-Array.from(document.getElementsByClassName('color-button')).forEach(
-    el => {
-        el.onclick = e => setColorAction(e.target.style.backgroundColor)
-    }
-)
-
+registerOverlay()
 registerCircles()
-
+registerTools()
+registerMessages()
 
 socket.open()

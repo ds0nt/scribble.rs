@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Bios-Marcel/discordemojimap"
+	"github.com/kr/pretty"
 )
 
 // RemoveLobby deletes a lobby, not allowing anyone to connect to it again.
@@ -37,7 +39,9 @@ func (l *Lobby) JoinPlayer(playerName string) string {
 
 func (l *Lobby) Connect(player *Player) {
 	player.Connected = true
-	WriteAsJSON(player, Packet{Type: "ready", Data: &Ready{
+
+	pretty.Println(l)
+	readyBytes, err := json.Marshal(&Ready{
 		PlayerID: player.ID,
 		Drawing:  player.State == PlayerStateDrawing,
 
@@ -48,11 +52,19 @@ func (l *Lobby) Connect(player *Player) {
 		WordHints:      l.GetAvailableWordHints(player),
 		Players:        l.Players,
 		CurrentDrawing: l.CurrentDrawing,
-	}})
+	})
+	if err != nil {
+		panic(err)
+	}
+	WriteAsJSON(player, Packet{Type: "ready", Data: readyBytes})
 
 	//This state is reached when the player refreshes before having chosen a word.
 	if l.Drawer == player && l.CurrentWord == "" {
-		WriteAsJSON(l.Drawer, &Packet{Type: "your-turn", Data: l.WordChoice})
+		choiceBytes, err := json.Marshal(l.WordChoice)
+		if err != nil {
+			panic(err)
+		}
+		WriteAsJSON(l.Drawer, &Packet{Type: "your-turn", Data: choiceBytes})
 	}
 
 	//TODO Only send to everyone except for the new player, since it's part of the ready event.
@@ -203,7 +215,11 @@ func (l *Lobby) advanceLobby() {
 		RoundEndTime: l.RoundEndTime,
 	}, l)
 
-	WriteAsJSON(l.Drawer, &Packet{Type: "your-turn", Data: l.WordChoice})
+	choiceBytes, err := json.Marshal(l.WordChoice)
+	if err != nil {
+		panic(err)
+	}
+	WriteAsJSON(l.Drawer, &Packet{Type: "your-turn", Data: choiceBytes})
 }
 
 func (l *Lobby) selectNextDrawer() {
@@ -278,10 +294,14 @@ func (l *Lobby) recalculateRanks() {
 func (l *Lobby) sendMessageToAll(message string, sender *Player) {
 	escaped := html.EscapeString(discordemojimap.Replace(message))
 	for _, target := range l.Players {
-		WriteAsJSON(target, Packet{Type: "message", Data: Message{
+		data, err := json.Marshal(Message{
 			Author:  html.EscapeString(sender.Name),
 			Content: escaped,
-		}})
+		})
+		if err != nil {
+			panic(err)
+		}
+		WriteAsJSON(target, Packet{Type: "message", Data: data})
 	}
 }
 
@@ -289,10 +309,14 @@ func (l *Lobby) sendMessageToAllNonGuessing(message string, sender *Player) {
 	escaped := html.EscapeString(discordemojimap.Replace(message))
 	for _, target := range l.Players {
 		if target.State != PlayerStateGuessing {
-			WriteAsJSON(target, Packet{Type: "non-guessing-player-message", Data: Message{
+			data, err := json.Marshal(Message{
 				Author:  html.EscapeString(sender.Name),
 				Content: escaped,
-			}})
+			})
+			if err != nil {
+				panic(err)
+			}
+			WriteAsJSON(target, Packet{Type: "non-guessing-player-message", Data: data})
 		}
 	}
 }

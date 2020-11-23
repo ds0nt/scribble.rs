@@ -5,12 +5,21 @@ import socket from './socket'
 import { PEN, RUBBER, FILL_BUCKET } from './constants';
 import { rgbStr2hex } from './util';
 
+export function startGameAction() {
+    socket.sendStart()
+    //Tas: not needed
+    //startDialog.style.display = "hidden";
+    hide("#start-dialog");
+    show("#word-dialog");
+    elements.wordDialog.style.display = "block";
+}
+
 export function clearAction() {
     canvas.clear();
     socket.sendClear()
 }
 
-const sendMessageAction = () => {
+export const sendMessageAction = () => {
     socket.sendMessage(elements.messageInput.value)
     elements.messageInput.value = "";
 
@@ -59,14 +68,14 @@ export function drawAction(x1, y1, x2, y2) {
     socket.sendLine(_x1, _y1, _x2, _y2, _color, _lineWidth)
 }
 
-export function setColorAction(value) {
+export function setColorAction(rgbStr) {
     let localColor
-    if (value === undefined) {
+    if (rgbStr === undefined) {
         localColor = elements.colorPicker.value
     } else {
-        value = rgbStr2hex(value)
-        elements.colorPicker.value = value;
-        localColor = value
+        rgbStr = rgbStr2hex(rgbStr)
+        elements.colorPicker.value = rgbStr;
+        localColor = rgbStr
     }
     gameState.setState({ localColor });
 }

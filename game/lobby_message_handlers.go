@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"math"
@@ -35,13 +36,18 @@ func (l *Lobby) handleMessage(input string, from *Player) {
 			from.Score += from.LastScore
 			l.scoreEarnedByGuessers += from.LastScore
 			from.State = PlayerStateStandby
-			WriteAsJSON(from, Packet{Type: "system-message", Data: "You have correctly guessed the word."})
+			WriteAsJSON(from, Packet{Type: "system-message", Data: []byte("You have correctly guessed the word.")})
 
 			if !l.isAnyoneStillGuessing() {
 				l.endRound()
 			} else {
+				bytes, err := json.Marshal(l.WordHintsShown)
+				if err != nil {
+					panic(err)
+				}
+
 				//Since the word has been guessed correctly, we reveal it.
-				WriteAsJSON(from, Packet{Type: "update-wordhint", Data: l.WordHintsShown})
+				WriteAsJSON(from, Packet{Type: "update-wordhint", Data: bytes})
 				l.recalculateRanks()
 				l.triggerCorrectGuessEvent()
 				l.triggerPlayersUpdate()
@@ -49,7 +55,7 @@ func (l *Lobby) handleMessage(input string, from *Player) {
 
 			return
 		} else if levenshtein.ComputeDistance(lowerCasedInput, lowerCasedSearched) == 1 {
-			WriteAsJSON(from, Packet{Type: "system-message", Data: fmt.Sprintf("'%s' is very close.", trimmed)})
+			WriteAsJSON(from, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("'%s' is very close.", trimmed))})
 		}
 
 		l.sendMessageToAll(trimmed, from)
@@ -89,7 +95,7 @@ func (l *Lobby) commandNick(caller *Player, args []string) {
 				newName = newName[:31]
 			}
 			caller.Name = newName
-			WriteAsJSON(caller, Packet{Type: "persist-username", Data: newName})
+			WriteAsJSON(caller, Packet{Type: "persist-username", Data: []byte(newName)})
 		}
 		l.triggerPlayersUpdate()
 	}
@@ -110,15 +116,15 @@ func (l *Lobby) commandSetMP(caller *Player, args []string) {
 				WritePublicSystemMessage(l, fmt.Sprintf("MaxPlayers value has been changed to %d", l.MaxPlayers))
 			} else {
 				if len(l.Players) > int(LobbySettingBounds.MinMaxPlayers) {
-					WriteAsJSON(caller, Packet{Type: "system-message", Data: fmt.Sprintf("MaxPlayers value should be between %d and %d.", len(l.Players), LobbySettingBounds.MaxMaxPlayers)})
+					WriteAsJSON(caller, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("MaxPlayers value should be between %d and %d.", len(l.Players), LobbySettingBounds.MaxMaxPlayers))})
 				} else {
-					WriteAsJSON(caller, Packet{Type: "system-message", Data: fmt.Sprintf("MaxPlayers value should be between %d and %d.", LobbySettingBounds.MinMaxPlayers, LobbySettingBounds.MaxMaxPlayers)})
+					WriteAsJSON(caller, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("MaxPlayers value should be between %d and %d.", LobbySettingBounds.MinMaxPlayers, LobbySettingBounds.MaxMaxPlayers))})
 				}
 			}
 		} else {
-			WriteAsJSON(caller, Packet{Type: "system-message", Data: fmt.Sprintf("MaxPlayers value must be numeric.")})
+			WriteAsJSON(caller, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("MaxPlayers value must be numeric."))})
 		}
 	} else {
-		WriteAsJSON(caller, Packet{Type: "system-message", Data: fmt.Sprintf("Only the lobby owner can change MaxPlayers setting.")})
+		WriteAsJSON(caller, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("Only the lobby owner can change MaxPlayers setting."))})
 	}
 }

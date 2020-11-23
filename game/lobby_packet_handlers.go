@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/kr/pretty"
 )
 
 // Packet contains an eventtype and optionally any data.
 type Packet struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data"`
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
 }
 
 type packetHandler = func(p *Packet, bytes []byte, from *Player) error
@@ -29,12 +31,16 @@ func (l *Lobby) routes() map[string]packetHandler {
 }
 
 func (l *Lobby) HandlePacket(bytes []byte, from *Player) error {
+	pretty.Println(string(bytes))
+
 	p := &Packet{}
 	err := json.Unmarshal(bytes, p)
 	if err != nil {
 		log.Printf("json unmarshal error from websocket: %s\n", err)
 		return err
 	}
+
+	pretty.Println(p)
 
 	handler, ok := l.routes()[p.Type]
 	if !ok {
@@ -45,9 +51,10 @@ func (l *Lobby) HandlePacket(bytes []byte, from *Player) error {
 }
 
 func (l *Lobby) message(p *Packet, bytes []byte, from *Player) error {
-	text, ok := (p.Data).(string)
-	if !ok {
-		return fmt.Errorf("message event data required but not recieved: '%s'", p.Data)
+	text := ""
+	err := json.Unmarshal(p.Data, &text)
+	if err != nil {
+		return fmt.Errorf("error decoding message data: %s", err)
 	}
 
 	if strings.HasPrefix(text, "!") {
@@ -63,7 +70,7 @@ func (l *Lobby) line(p *Packet, bytes []byte, from *Player) error {
 		return nil
 	}
 	line := &Line{}
-	err := json.Unmarshal(bytes, line)
+	err := json.Unmarshal(p.Data, &line)
 	if err != nil {
 		return fmt.Errorf("error decoding line data: %s", err)
 	}
@@ -79,7 +86,7 @@ func (l *Lobby) fill(p *Packet, bytes []byte, from *Player) error {
 
 	if l.canDraw(from) {
 		fill := &Fill{}
-		err := json.Unmarshal(bytes, fill)
+		err := json.Unmarshal(p.Data, &fill)
 		if err != nil {
 			return fmt.Errorf("error decoding fill data: %s", err)
 		}
@@ -102,15 +109,10 @@ func (l *Lobby) clearDrawingBoard(p *Packet, bytes []byte, from *Player) error {
 
 func (l *Lobby) chooseWord(p *Packet, bytes []byte, from *Player) error {
 
-	chosenIndex, ok := (p.Data).(int)
-	if !ok {
-		asFloat, isFloat32 := (p.Data).(float64)
-		if isFloat32 && asFloat < 4 {
-			chosenIndex = int(asFloat)
-		} else {
-			fmt.Println("Invalid data")
-			return nil
-		}
+	chosenIndex := 0
+	err := json.Unmarshal(p.Data, &chosenIndex)
+	if err != nil {
+		return fmt.Errorf("error decoding chosen word data: %s", err)
 	}
 
 	drawer := l.Drawer
@@ -145,15 +147,16 @@ func createWordHintFor(word string, showAll bool) []*WordHint {
 }
 
 func (l *Lobby) kickVote(p *Packet, bytes []byte, from *Player) error {
-	toKickID, ok := (p.Data).(string)
-	if !ok {
-		fmt.Println("Invalid data")
-		return nil
+	toKickID := ""
+	err := json.Unmarshal(p.Data, &toKickID)
+	if err != nil {
+		return fmt.Errorf("error decoding kick-vote data: %s", err)
 	}
+
 	if !l.EnableVotekick {
 		// Votekicking is disabled in the lobby
 		// We tell the user and do not continue with the event
-		WriteAsJSON(from, Packet{Type: "system-message", Data: "Votekick is disabled in this lobby!"})
+		WriteAsJSON(from, Packet{Type: "system-message", Data: []byte("Votekick is disabled in this lobby!")})
 	} else {
 		l.kick(from, toKickID)
 	}

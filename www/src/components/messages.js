@@ -1,16 +1,9 @@
+import { messageForm } from "../elements";
+import { sendMessageAction } from "../actions";
 
-export function applyMessage(styleClass, author, message) {
-    console.log(message);
-    if (message === "Game over. Type !start again to start a new round.") {
-        show("#score-dialog");
-        return;
-    }
-    if (messageContainer.childElementCount >= 100) {
-        messageContainer.removeChild(messageContainer.firstChild)
-    }
-
-    messageContainer.innerHTML += `<div class="message ` + styleClass + `">
-                            <span class="chat-name">` + author + `</span>
-                            <span class="message-content">` + message + `</span>
-                        </div>`;
+export function registerMessages() {
+    messageForm.onsubmit = e => { 
+        e.preventDefault(); 
+        sendMessageAction() 
+    };
 }

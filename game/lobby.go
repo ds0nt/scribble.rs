@@ -85,18 +85,18 @@ type WordHint struct {
 
 // Line is the struct that a client send when drawing
 type Line struct {
-	FromX     float32 `json:"fromX"`
-	FromY     float32 `json:"fromY"`
-	ToX       float32 `json:"toX"`
-	ToY       float32 `json:"toY"`
+	FromX     float64 `json:"fromX"`
+	FromY     float64 `json:"fromY"`
+	ToX       float64 `json:"toX"`
+	ToY       float64 `json:"toY"`
 	Color     string  `json:"color"`
-	LineWidth float32 `json:"lineWidth"`
+	LineWidth float64 `json:"lineWidth"`
 }
 
 // Fill represents the usage of the fill bucket.
 type Fill struct {
-	X     float32 `json:"x"`
-	Y     float32 `json:"y"`
+	X     float64 `json:"x"`
+	Y     float64 `json:"y"`
 	Color string  `json:"color"`
 }
 

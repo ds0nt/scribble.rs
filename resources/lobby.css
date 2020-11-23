@@ -480,9 +480,7 @@ body {
     width: 5.368vw;
     height: 11vh;
 }
-.draw svg{
-    fill:var(--color);
-}
+
 .erase{
     display: flex;
     flex-direction: column;
@@ -534,21 +532,18 @@ body {
     width: 1.464vw;
     height: 3vh;
     border-radius: 1.5vh;
-    background-color: var(--color);
     box-shadow: inset 0 0 0 2px white;
 }
 #medium-circle{
     width: 2.196vw;
     height: 4.5vh;
     border-radius: 2.25vh;
-    background-color: var(--color);
     box-shadow: inset 0 0 0 2px white;
 }
 #huge-circle{
     width: 2.928vw;
     height: 6vh;
     border-radius: 3vh;
-    background-color: var(--color);
     box-shadow: inset 0 0 0 2px white;
 }
 .brush-size{
