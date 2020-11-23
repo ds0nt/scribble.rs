@@ -1,16 +1,16 @@
 #player-container {
-    display: grid;
-    grid-area: 2 / 1/ 3 / 2;
-    grid-template-rows: 8vh 7vh 7vh 7vh 7vh 7vh 7vh 7vh 7vh 7vh;
+    display: flex;
+    flex-direction: column;
+    width: 7vh;
     transition: 1s;
 }
-.playerBox{
-    display: grid;
+.playerBox {
+    display: flex;
     grid-template-columns: auto auto auto;
     background: #F5F5F5 0% 0% no-repeat padding-box;
     border: solid #707070 1px;
 }
-.playerName{
+.playerName {
     display: flex;
     align-items: center;
     line-height: 100%;
@@ -19,11 +19,12 @@
     color: #363636;
     height: 100%;
 }
-.playerScore{
+.playerScore {
     height: 100%;
     display: flex;
     align-items: center;
     text-align: left;
+    vertical-align: center;
     letter-spacing: 0;
     color: #363636;
     font-weight: bold;
@@ -32,7 +33,7 @@
     font-weight: bold;
 }
 
-.playerBox  img{
+.playerBox img {
     height: 7vh;
     display: block;
 }
