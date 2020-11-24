@@ -1,7 +1,7 @@
 import * as actions from '../actions'
-import gameState from '../game-state'
-import { smallCircle, mediumCircle, hugeCircle, drawTool, fillTool, selectCircle, selectTool, colorPicker, eraseTool, clearTool, scaleUpFactor, drawingBoard } from '../elements';
-import { hexToRgbStr, contrastShade, hexToRgb } from '../util';
+import gameState from '../lib/game-state'
+import { smallCircle, mediumCircle, hugeCircle, drawTool, fillTool, selectCircle, selectTool, colorPicker, eraseTool, clearTool, scaleUpFactor, drawingBoard, undoTool } from '../elements';
+import { hexToRgbStr, contrastShade, hexToRgb } from '../lib/util';
 import { RUBBER, FILL_BUCKET, PEN, SMALL_CIRCLE, MEDIUM_CIRCLE, HUGE_CIRCLE } from '../constants';
 
 
@@ -19,6 +19,7 @@ export function registerTools() {
     fillTool.onclick = e => actions.chooseToolAction(FILL_BUCKET)
     eraseTool.onclick = e => actions.chooseToolAction(RUBBER)
     clearTool.onclick = e => actions.clearAction()
+    undoTool.onclick = e => actions.undoAction()
 
     gameState.registerHandler((state, prevState) => {
         const { localTool } = state

@@ -1,13 +1,13 @@
-import { scaleDownFactor } from './elements'
-import { hexToRgb } from './util.js'
+import { scaleDownFactor, scaleDown } from './elements'
+import { hexToRgb } from './lib/util.js'
 import { drawingBoard } from './elements'
 import * as actions from './actions'
 import { PEN, RUBBER, FILL_BUCKET } from './constants';
 
-import gameState from './game-state.js';
+import gameState from './lib/game-state.js';
+
 
 var context = drawingBoard.getContext("2d")
-
 
 function handleCanvasResize() {
     drawingBoard.width = drawingBoard.clientWidth;
@@ -22,6 +22,30 @@ function handleCanvasResize() {
 handleCanvasResize();
 window.addEventListener("resize", handleCanvasResize, false);
 
+
+export function applyDrawData(drawElements) {
+    clear();
+    
+    drawElements.forEach(function (drawElement) {
+        let drawData = drawElement.data;
+        if (drawElement.type === "fill") {
+            fill(...scaleDown(drawData.x, drawData.y), drawData.color);
+        } else if (drawElement.type === "line") {
+            drawLine(
+                ...scaleDown(
+                    drawData.fromX,
+                    drawData.fromY,
+                    drawData.toX,
+                    drawData.toY,
+                ),
+                drawData.color,
+                scaleDown(drawData.lineWidth)[0]
+            );
+        } else {
+            console.log("Unknown draw element type: " + drawData.type)
+        }
+    });
+}
 
 export function clear() {
     context.fillStyle = "#FFFFFF";
@@ -174,6 +198,7 @@ drawingBoard.ontouchmove = function (e) {
 };
 
 drawingBoard.ontouchcancel = function (e) {
+    gameState.incLineGesture()
     if (cursorDrawing) {
         // find touch with correct ID
         for (let i = e.changedTouches.length - 1; i >= 0; i--) {

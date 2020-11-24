@@ -32,6 +32,7 @@ export const eraseTool = document.getElementById('erase-tool')
 export const clearTool = document.getElementById('clear-tool')
 export const drawTool = document.getElementById('draw-tool')
 export const fillTool = document.getElementById('fill-tool')
+export const undoTool = document.getElementById('undo-tool')
 
 export const smallCircle = document.getElementById('small-circle')
 export const mediumCircle = document.getElementById('medium-circle')
@@ -51,3 +52,87 @@ export const selectTool = index => {
 }
 
 
+
+// <div class="playerBox">
+//         <img src="../resources/image/avatar_phillip.png" alt="">
+//         <div class="playerName self">james</div>
+//         <div class="playerScore">0</div>
+//     </div> 
+export function applyPlayers(players, ownID) {
+    
+    playerContainer.innerHTML = "";
+    players.forEach(function (player) {
+        if (!player.connected) {
+            return;
+        }
+
+        let stateStyleClass;
+        if (player.state === 2) {
+            stateStyleClass = 'player-done';
+        } else {
+            stateStyleClass = '';
+        }
+        let newPlayerElement = '<div class="playerBox">' +
+            ' <img src="../resources/image/avatar_phillip.png" alt="">' +
+            '<div class="name';
+        //Tas: not sure if we need to add this
+        // if (player.id === ownID) {
+        //     newPlayerElement += ' playername-self';
+        // }
+        newPlayerElement += '">' + player.name + '</div>';
+        if (player.id !== ownID) {
+            newPlayerElement +=
+                '<button class="kick-button" id="kick-button" type="button" title="Vote to kick this player" alt="Vote to kick this player" onclick="onClickKickButton(' + player.id + ')">👋</button>';
+        }
+        newPlayerElement +=
+            '<span class="score">' + player.score + '</span>' +
+            // '<span class="last-turn-score">(Last turn: ' + player.lastScore + ')</span>' +
+            '</div>';
+        if (player.state === 1) {
+            newPlayerElement += '<span>✏️</span>';
+        } else if (player.state === 2) {
+            newPlayerElement += '<span>✔️</span>';
+        }
+        newPlayerElement += '</div></div></div>';
+        let newPlayer = document.createRange().createContextualFragment(newPlayerElement);
+        console.log(newPlayer);
+        playerContainer.appendChild(newPlayer);
+
+    });
+}
+
+export function applyRounds(round, maxRound) {
+    roundsSpan.innerText = 'Round ' + round + ' of ' + maxRound;
+}
+
+export function applyWordHints(wordHints) {
+    wordContainer.innerHTML = "";
+    //If no hint has been revealed
+    wordHints.forEach(function (hint) {
+        if (hint.character === 0) {
+            wordContainer.innerHTML += '<span class="guess-letter guess-letter-underline">&nbsp;</span>';
+        } else {
+            let char = String.fromCharCode(hint.character);
+            if (hint.underline) {
+                wordContainer.innerHTML += '<span class="guess-letter guess-letter-underline">' + char + '</span>'
+            } else {
+                wordContainer.innerHTML += '<span class="guess-letter">' + char + '</span>';
+            }
+        }
+    });
+}
+
+export function applyMessage(styleClass, author, message) {
+    if (message === "Game over. Type !start again to start a new round.") {
+        show("#score-dialog");
+        return;
+    }
+    if (messageContainer.childElementCount >= 100) {
+        messageContainer.removeChild(messageContainer.firstChild)
+    }
+
+    messageContainer.innerHTML += `<div class="message ` + styleClass + `">
+                            <span class="chat-name">` + author + `</span>
+                            <span class="message-content">` + message + `</span>
+                        </div>`;
+}

@@ -21,17 +21,27 @@ type packetHandler = func(p *Packet, bytes []byte, from *Player) error
 func (l *Lobby) routes() map[string]packetHandler {
 	return map[string]packetHandler{
 		"message":             l.message,
-		"line":                l.line,
-		"fill":                l.fill,
-		"clear-drawing-board": l.clearDrawingBoard,
+		"line":                l.canDrawMiddleware(l.line),
+		"fill":                l.canDrawMiddleware(l.fill),
+		"undo":                l.canDrawMiddleware(l.undo),
+		"clear-drawing-board": l.canDrawMiddleware(l.clearDrawingBoard),
 		"choose-word":         l.chooseWord,
 		"kick-vote":           l.kickVote,
 		"start":               l.start,
 	}
 }
 
+// canDrawMiddleware accepts messages only from the current drawer
+func (l *Lobby) canDrawMiddleware(handler packetHandler) packetHandler {
+	return func(p *Packet, bytes []byte, from *Player) error {
+		if !l.canDraw(from) {
+			return nil
+		}
+		return handler(p, bytes, from)
+	}
+}
+
 func (l *Lobby) HandlePacket(bytes []byte, from *Player) error {
-	pretty.Println(string(bytes))
 
 	p := &Packet{}
 	err := json.Unmarshal(bytes, p)
@@ -66,9 +76,6 @@ func (l *Lobby) message(p *Packet, bytes []byte, from *Player) error {
 }
 
 func (l *Lobby) line(p *Packet, bytes []byte, from *Player) error {
-	if !l.canDraw(from) {
-		return nil
-	}
 	line := &Line{}
 	err := json.Unmarshal(p.Data, &line)
 	if err != nil {
@@ -84,26 +91,29 @@ func (l *Lobby) line(p *Packet, bytes []byte, from *Player) error {
 
 func (l *Lobby) fill(p *Packet, bytes []byte, from *Player) error {
 
-	if l.canDraw(from) {
-		fill := &Fill{}
-		err := json.Unmarshal(p.Data, &fill)
-		if err != nil {
-			return fmt.Errorf("error decoding fill data: %s", err)
-		}
-		l.AppendFill(&FillEvent{Type: p.Type, Data: fill})
-
-		//We directly forward the event, as it seems to be valid.
-		SendDataToOtherPlayers(from, l, p)
+	fill := &Fill{}
+	err := json.Unmarshal(p.Data, &fill)
+	if err != nil {
+		return fmt.Errorf("error decoding fill data: %s", err)
 	}
+	l.AppendFill(&FillEvent{Type: p.Type, Data: fill})
+
+	//We directly forward the event, as it seems to be valid.
+	SendDataToOtherPlayers(from, l, p)
+	return nil
+
+}
+func (l *Lobby) undo(p *Packet, bytes []byte, from *Player) error {
+
+	l.Undo()
+	SendDataToOtherPlayers(from, l, p)
 	return nil
 
 }
 
 func (l *Lobby) clearDrawingBoard(p *Packet, bytes []byte, from *Player) error {
-	if l.canDraw(from) {
-		l.ClearDrawing()
-		SendDataToOtherPlayers(from, l, p)
-	}
+	l.ClearDrawing()
+	SendDataToOtherPlayers(from, l, p)
 	return nil
 }
 

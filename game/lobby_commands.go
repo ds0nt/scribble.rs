@@ -115,11 +115,21 @@ type FillEvent struct {
 	Data *Fill  `json:"data"`
 }
 
+// UndoEvent
+type UndoEvent struct {
+	Type string `json:"type"`
+	Data *Fill  `json:"data"`
+}
+
 // AppendFill adds a fill direction to the current drawing. This exists in order
 // to prevent adding arbitrary elements to the drawing, as the backing array is
 // an empty interface type.
 func (l *Lobby) AppendFill(fill *FillEvent) {
 	l.CurrentDrawing = append(l.CurrentDrawing, fill)
+}
+
+func (l *Lobby) Undo() {
+	l.CurrentDrawing = l.CurrentDrawing[:len(l.CurrentDrawing)-1]
 }
 
 func (l *Lobby) endRound() {

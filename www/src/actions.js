@@ -1,9 +1,9 @@
 import * as canvas from './canvas'
 import * as elements from './elements'
-import gameState from './game-state'
-import socket from './socket'
+import gameState from './lib/game-state'
+import socket from './lib/socket'
 import { PEN, RUBBER, FILL_BUCKET } from './constants';
-import { rgbStr2hex } from './util';
+import { rgbStr2hex } from './lib/util';
 
 export function startGameAction() {
     socket.sendStart()
@@ -14,17 +14,18 @@ export function startGameAction() {
     elements.wordDialog.style.display = "block";
 }
 
-export function clearAction() {
-    canvas.clear();
-    socket.sendClear()
-}
 
 export const sendMessageAction = () => {
     socket.sendMessage(elements.messageInput.value)
     elements.messageInput.value = "";
 
     return false;
-};
+}
+
+export function kickAction(playerId) {
+    socket.sendKickVote(playerId);
+}
+
 
 export function chooseWordAction(index) {
     socket.sendChooseWord(index)
@@ -37,36 +38,6 @@ export function chooseWordAction(index) {
     gameState.setState({ allowDrawing: true })
 }
 
-export function kickAction(playerId) {
-    socket.sendKickVote(playerId);
-}
-
-export function fillAction(x, y) {
-    canvas.fill(x, y, gameState.state.localColor);
-    let _x = x * elements.scaleUpFactor()
-    let _y = y * elements.scaleUpFactor()
-    socket.sendFill(_x, _y, gameState.state.localColor)
-
-}
-
-export function drawAction(x1, y1, x2, y2) {
-    const { localColor, localLineWidth, localTool } = gameState.state
-    let _color
-    if (localTool === RUBBER) {
-        _color = "#ffffff";
-    } else {
-        _color = localColor
-    }
-
-    canvas.drawLine(x1, y1, x2, y2, _color, localLineWidth);
-
-    let _x1 = x1 * elements.scaleUpFactor()
-    let _y1 = y1 * elements.scaleUpFactor()
-    let _x2 = x2 * elements.scaleUpFactor()
-    let _y2 = y2 * elements.scaleUpFactor()
-    let _lineWidth = localLineWidth * elements.scaleUpFactor()
-    socket.sendLine(_x1, _y1, _x2, _y2, _color, _lineWidth)
-}
 
 export function setColorAction(rgbStr) {
     let localColor
@@ -91,4 +62,66 @@ export function chooseToolAction(value) {
     if (value === PEN || value === RUBBER || value === FILL_BUCKET) {
         gameState.setState({ localTool: value })
     }
+}
+
+export function fillAction(x, y) {
+    canvas.fill(x, y, gameState.state.localColor);
+    let _x = x * elements.scaleUpFactor()
+    let _y = y * elements.scaleUpFactor()
+    
+    gameState.addFill(_x, _y, gameState.state.localColor)
+    socket.sendFill(_x, _y, gameState.state.localColor)
+
+}
+
+export function drawAction(x1, y1, x2, y2) {
+    const { localColor, localLineWidth, localTool } = gameState.state
+    let _color
+    if (localTool === RUBBER) {
+        _color = "#ffffff";
+    } else {
+        _color = localColor
+    }
+
+    canvas.drawLine(x1, y1, x2, y2, _color, localLineWidth);
+
+    let _x1 = x1 * elements.scaleUpFactor()
+    let _y1 = y1 * elements.scaleUpFactor()
+    let _x2 = x2 * elements.scaleUpFactor()
+    let _y2 = y2 * elements.scaleUpFactor()
+    let _lineWidth = localLineWidth * elements.scaleUpFactor()
+    
+    gameState.addLine(_x1, _y1, _x2, _y2, _color, _lineWidth)
+    socket.sendLine(_x1, _y1, _x2, _y2, _color, _lineWidth)
+}
+
+export function clearAction() {
+    canvas.clear();
+    gameState.clearDrawing()
+    socket.sendClear()
+}
+
+export function undoAction() {
+    const { currentDrawing } = gameState.state
+    if (currentDrawing.length == 0) {
+        return
+    }
+    
+    let final = currentDrawing[currentDrawing.length-1]
+
+    if (final && final.type == "line") {
+        let lineId = final.gestureId
+        for (let i = currentDrawing.length-1; i >= 0; i--) {
+            if (currentDrawing[i].gestureId != lineId) {
+                break
+            }
+            gameState.undoDrawing()
+        }
+    } else {
+        gameState.undoDrawing()
+    }
+    
+    socket.sendUndo()
+
+    canvas.applyDrawData(gameState.state.currentDrawing)
 }

@@ -83,6 +83,11 @@ class Socket {
         }
         this.socket.send(JSON.stringify(drawInstruction));
     }
+    sendUndo() {
+        this.socket.send(JSON.stringify({
+            type: "undo",
+        }));
+    }
 }
 
 export default new Socket()
