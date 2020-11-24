@@ -54,8 +54,9 @@ export function registerCircles() {
 
     // on set line width
     gameState.registerHandler((state, prevState) => {
-        const { localLineWidth, localColor } = state
-        if (localColor == prevState.localColor) {
+        const { localLineWidth, localLineWidthUnscaled, localColor } = state
+        if (localColor == prevState.localColor 
+                && localLineWidthUnscaled == prevState.localLineWidthUnscaled) {
             return
         }
         let cursorColor;
@@ -66,8 +67,6 @@ export function registerCircles() {
         } else {
             cursorColor = localColor;
         }
-
-        console.log(cursorColor, borderColor)
 
         let circleSize = localLineWidth;
 1
