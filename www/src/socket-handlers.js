@@ -82,7 +82,7 @@ export function registerSocketHandlers() {
     })
     socket.addHandler("undo", (pkt) => {
         gameState.undoDrawing()
-
+        
         canvas.clear();
         canvas.applyDrawData(gameState.state.currentDrawing)
 

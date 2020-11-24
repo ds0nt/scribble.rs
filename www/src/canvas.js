@@ -229,6 +229,7 @@ drawingBoard.onmousedown = function (e) {
 window.onmouseup = function (e) {
     if (cursorDrawing === true) {
         cursorDrawing = false;
+        gameState.incLineGesture()
     }
 };
 

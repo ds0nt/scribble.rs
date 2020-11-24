@@ -52,7 +52,7 @@ class GameState {
         this.setState({
             currentDrawing: [
                 ...currentDrawing,
-                pkt,            
+                pkt,
             ]
         });
     }
@@ -63,17 +63,17 @@ class GameState {
             currentDrawing: [
                 ...currentDrawing,
                 {
-                type: "fill",
-                data: {
-                    x: x,
-                    y: y,
-                    color: color
-                },
-            }]
+                    type: "fill",
+                    data: {
+                        x: x,
+                        y: y,
+                        color: color
+                    },
+                }]
         });
     }
 
-    addLine = (x1, y1, x2, y2, color, lineWidth, gestureId=0) => {
+    addLine = (x1, y1, x2, y2, color, lineWidth) => {
         const { currentDrawing } = this.state
         this.setState({
             currentDrawing: [
@@ -81,6 +81,7 @@ class GameState {
                 {
                     type: "line",
                     data: {
+                        gestureId: this.state.gestureId,
                         fromX: x1,
                         fromY: y1,
                         toX: x2,
@@ -88,19 +89,28 @@ class GameState {
                         color: color,
                         lineWidth: lineWidth,
                     },
-                }                
+                }
             ]
         });
     }
-    incLineGesture = () => { 
+    incLineGesture = () => {
         this.setState({
-            gestureId: this.state.gestureId+1
+            gestureId: this.state.gestureId + 1
         })
 
     }
     undoDrawing = () => {
-        let  currentDrawing = [ ...this.state.currentDrawing ]
-        let final = currentDrawing.splice(-1, 1)        
+        let currentDrawing = [...this.state.currentDrawing]
+
+        currentDrawing.splice(-1, 1)
+        
+        let final = currentDrawing[currentDrawing.length - 1]
+
+        if (final && final.type == "line") {
+            let gestureId = final.data.gestureId
+            currentDrawing = currentDrawing.filter(v => v.type != "line" || v.data.gestureId != gestureId)
+        }
+
         this.setState({ currentDrawing })
     }
 

@@ -107,19 +107,7 @@ export function undoAction() {
         return
     }
     
-    let final = currentDrawing[currentDrawing.length-1]
-
-    if (final && final.type == "line") {
-        let lineId = final.gestureId
-        for (let i = currentDrawing.length-1; i >= 0; i--) {
-            if (currentDrawing[i].gestureId != lineId) {
-                break
-            }
-            gameState.undoDrawing()
-        }
-    } else {
-        gameState.undoDrawing()
-    }
+    gameState.undoDrawing()
     
     socket.sendUndo()
 
