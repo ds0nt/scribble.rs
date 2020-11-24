@@ -85,6 +85,9 @@ func (l *Lobby) Disconnect(player *Player) {
 		log.Printf("There are currently %d open lobbies.\n", len(lobbies))
 	} else {
 		l.triggerPlayersUpdate()
+		if l.Drawer == player {
+			l.advanceLobby()
+		}
 	}
 }
 
