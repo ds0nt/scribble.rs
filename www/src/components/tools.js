@@ -4,7 +4,14 @@ import { smallCircle, mediumCircle, hugeCircle, drawTool, fillTool, selectCircle
 import { hexToRgbStr, contrastShade, hexToRgb } from '../lib/util';
 import { RUBBER, FILL_BUCKET, PEN, SMALL_CIRCLE, MEDIUM_CIRCLE, HUGE_CIRCLE } from '../constants';
 
-
+export function resetTools() {
+    actions.setLineWidthAction(15)
+    actions.setColorAction('rgb(0,0,0)')
+    actions.chooseToolAction(PEN)
+    selectCircle(SMALL_CIRCLE)
+    selectTool(PEN)
+       
+}
 
 export function registerTools() {
 

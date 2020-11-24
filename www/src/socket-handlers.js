@@ -4,6 +4,8 @@ import * as elements from './elements'
 
 import gameState from './lib/game-state'
 import socket from './lib/socket';
+import { resetTools } from './components/tools';
+import { PEN, SMALL_CIRCLE } from './constants';
 
 
 export function registerSocketHandlers() {
@@ -112,6 +114,7 @@ export function registerSocketHandlers() {
         })
     })
     socket.addHandler("your-turn", (pkt) => {
+        resetTools()
         audio.yourTurn()
         elements.wordButtonZero.textContent = pkt.data[0];
         elements.wordButtonOne.textContent = pkt.data[1];
