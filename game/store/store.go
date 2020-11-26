@@ -6,25 +6,11 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/kr/pretty"
 	"github.com/scribble-rs/scribble.rs/game"
-	"github.com/vmihailenco/msgpack"
 )
 
-type LobbyEntity struct {
-	Lobby game.Lobby
-}
-
-func (m *LobbyEntity) MarshalBinary() ([]byte, error) {
-	return msgpack.Marshal(&m)
-}
-
-// https://github.com/go-redis/redis/issues/739
-func (m *LobbyEntity) UnmarshalBinary(data []byte) error {
-	return msgpack.Unmarshal(data, &m)
-}
-
 type Store interface {
-	Save(l *LobbyEntity) error
-	FindByID(id string) (*LobbyEntity, error)
+	Save(l *game.Lobby) error
+	FindByID(id string) (*game.Lobby, error)
 }
 
 type RedisStore struct {
@@ -40,16 +26,16 @@ func NewRedisStore() *RedisStore {
 	}
 }
 
-func (m *RedisStore) Save(l *LobbyEntity) error {
-	cmd := m.client.Set(l.Lobby.ID, l, 0)
+func (m *RedisStore) Save(l *game.Lobby) error {
+	cmd := m.client.Set(l.ID, l, 0)
 	text, err := cmd.Result()
 	fmt.Println("redis-store save:", text)
 
 	return err
 }
 
-func (m *RedisStore) FindByID(id string) (l *LobbyEntity, err error) {
-	l = &LobbyEntity{}
+func (m *RedisStore) FindByID(id string) (l *game.Lobby, err error) {
+	l = &game.Lobby{}
 	cmd := m.client.Get(id)
 	err = cmd.Scan(l)
 	pretty.Println("redis-store get:", id, l)
@@ -57,25 +43,25 @@ func (m *RedisStore) FindByID(id string) (l *LobbyEntity, err error) {
 }
 
 type MemStore struct {
-	lobbies map[string]*LobbyEntity
+	lobbies map[string]*game.Lobby
 }
 
 func NewMemStore() *MemStore {
 	return &MemStore{
-		lobbies: make(map[string]*LobbyEntity),
+		lobbies: make(map[string]*game.Lobby),
 	}
 }
 
-func (m *MemStore) Save(l *LobbyEntity) error {
-	m.lobbies[l.Lobby.ID] = l
+func (m *MemStore) Save(l *game.Lobby) error {
+	m.lobbies[l.ID] = l
 	return nil
 }
 
-func (m *MemStore) FindByID(id string) (l *LobbyEntity, err error) {
+func (m *MemStore) FindByID(id string) (l *game.Lobby, err error) {
 
 	l, ok := m.lobbies[id]
 	if !ok {
-		return nil, fmt.Errorf("lobby %s not found", l.Lobby.ID)
+		return nil, fmt.Errorf("lobby %s not found", l.ID)
 	}
 
 	return l, nil

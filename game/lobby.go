@@ -5,6 +5,7 @@ import (
 	"time"
 
 	uuid "github.com/satori/go.uuid"
+	"github.com/vmihailenco/msgpack"
 )
 
 // Lobby represents a game session.
@@ -137,6 +138,23 @@ type NewLobbyParams struct {
 	CustomWordsChance int
 	ClientsPerIPLimit int
 	EnableVotekick    bool
+}
+
+func (m *Lobby) MarshalBinary() ([]byte, error) {
+	return msgpack.Marshal(&m)
+}
+
+// https://github.com/go-redis/redis/issues/739
+func (m *Lobby) UnmarshalBinary(data []byte) error {
+	return msgpack.Unmarshal(data, &m)
+}
+
+func LoadLobbies() {
+
+}
+
+func SaveLobby() {
+
 }
 
 // NewLobby allows creating a lobby, optionally returning errors that
