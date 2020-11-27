@@ -19,7 +19,7 @@ func (l *Lobby) handleMessage(input string, from *Player) {
 		return
 	}
 
-	if l.CurrentWord == "" {
+	if l.State.CurrentWord == "" {
 		l.sendMessageToAll(trimmed, from)
 		return
 	}
@@ -29,9 +29,9 @@ func (l *Lobby) handleMessage(input string, from *Player) {
 		l.sendMessageToAllNonGuessing(trimmed, from)
 	case PlayerStateGuessing:
 		lowerCasedInput := strings.ToLower(trimmed)
-		lowerCasedSearched := strings.ToLower(l.CurrentWord)
+		lowerCasedSearched := strings.ToLower(l.State.CurrentWord)
 		if lowerCasedSearched == lowerCasedInput {
-			secondsLeft := l.RoundEndTime/1000 - time.Now().UTC().UnixNano()/1000000000
+			secondsLeft := l.State.RoundEndTime/1000 - time.Now().UTC().UnixNano()/1000000000
 			from.LastScore = int(math.Ceil(math.Pow(math.Max(float64(secondsLeft), 1), 1.3) * 2))
 			from.Score += from.LastScore
 			l.scoreEarnedByGuessers += from.LastScore
@@ -41,14 +41,13 @@ func (l *Lobby) handleMessage(input string, from *Player) {
 			if !l.isAnyoneStillGuessing() {
 				l.endRound()
 			} else {
-				bytes, err := json.Marshal(l.WordHintsShown)
+				bytes, err := json.Marshal(l.State.WordHintsShown)
 				if err != nil {
 					panic(err)
 				}
 
 				//Since the word has been guessed correctly, we reveal it.
 				WriteAsJSON(from, Packet{Type: "update-wordhint", Data: bytes})
-				l.recalculateRanks()
 				l.triggerCorrectGuessEvent()
 				l.triggerPlayersUpdate()
 			}
@@ -76,33 +75,33 @@ func (l *Lobby) handleCommand(commandString string, caller *Player) {
 	}
 }
 
-func (l *Lobby) commandNick(caller *Player, args []string) {
+func (l *Lobby) commandNick(from *Player, args []string) {
 	if len(args) == 1 {
-		caller.Name = GeneratePlayerName()
-		WriteAsJSON(caller, Packet{Type: "reset-username"})
+		from.Name = GeneratePlayerName()
+		WriteAsJSON(from, Packet{Type: "reset-username"})
 		l.triggerPlayersUpdate()
 	} else {
 		//We join all arguments, since people won't sue quotes either way.
 		//The input is trimmed and sanitized.
 		newName := html.EscapeString(strings.TrimSpace(strings.Join(args[1:], " ")))
 		if len(newName) == 0 {
-			caller.Name = GeneratePlayerName()
-			WriteAsJSON(caller, Packet{Type: "reset-username"})
+			from.Name = GeneratePlayerName()
+			WriteAsJSON(from, Packet{Type: "reset-username"})
 		} else {
-			fmt.Printf("%s is now %s\n", caller.Name, newName)
+			fmt.Printf("%s is now %s\n", from.Name, newName)
 			//We don't want super-long names
 			if len(newName) > 30 {
 				newName = newName[:31]
 			}
-			caller.Name = newName
-			WriteAsJSON(caller, Packet{Type: "persist-username", Data: []byte(newName)})
+			from.Name = newName
+			WriteAsJSON(from, Packet{Type: "persist-username", Data: []byte(newName)})
 		}
 		l.triggerPlayersUpdate()
 	}
 }
 
-func (l *Lobby) commandSetMP(caller *Player, args []string) {
-	if caller == l.Owner {
+func (l *Lobby) commandSetMP(from *Player, args []string) {
+	if l.State.Owner == from.ID {
 		if len(args) < 2 {
 			return
 		}
@@ -110,21 +109,21 @@ func (l *Lobby) commandSetMP(caller *Player, args []string) {
 		newMaxPlayersValue := strings.TrimSpace(args[1])
 		newMaxPlayersValueInt, err := strconv.ParseInt(newMaxPlayersValue, 10, 64)
 		if err == nil {
-			if int(newMaxPlayersValueInt) >= len(l.Players) && newMaxPlayersValueInt <= LobbySettingBounds.MaxMaxPlayers && newMaxPlayersValueInt >= LobbySettingBounds.MinMaxPlayers {
-				l.MaxPlayers = int(newMaxPlayersValueInt)
+			if int(newMaxPlayersValueInt) >= len(l.State.Players) && newMaxPlayersValueInt <= LobbySettingBounds.MaxMaxPlayers && newMaxPlayersValueInt >= LobbySettingBounds.MinMaxPlayers {
+				l.Settings.MaxPlayers = int(newMaxPlayersValueInt)
 
-				WritePublicSystemMessage(l, fmt.Sprintf("MaxPlayers value has been changed to %d", l.MaxPlayers))
+				WritePublicSystemMessage(l, fmt.Sprintf("MaxPlayers value has been changed to %d", l.Settings.MaxPlayers))
 			} else {
-				if len(l.Players) > int(LobbySettingBounds.MinMaxPlayers) {
-					WriteAsJSON(caller, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("MaxPlayers value should be between %d and %d.", len(l.Players), LobbySettingBounds.MaxMaxPlayers))})
+				if len(l.State.Players) > int(LobbySettingBounds.MinMaxPlayers) {
+					WriteAsJSON(from, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("MaxPlayers value should be between %d and %d.", len(l.State.Players), LobbySettingBounds.MaxMaxPlayers))})
 				} else {
-					WriteAsJSON(caller, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("MaxPlayers value should be between %d and %d.", LobbySettingBounds.MinMaxPlayers, LobbySettingBounds.MaxMaxPlayers))})
+					WriteAsJSON(from, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("MaxPlayers value should be between %d and %d.", LobbySettingBounds.MinMaxPlayers, LobbySettingBounds.MaxMaxPlayers))})
 				}
 			}
 		} else {
-			WriteAsJSON(caller, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("MaxPlayers value must be numeric."))})
+			WriteAsJSON(from, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("MaxPlayers value must be numeric."))})
 		}
 	} else {
-		WriteAsJSON(caller, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("Only the lobby owner can change MaxPlayers setting."))})
+		WriteAsJSON(from, Packet{Type: "system-message", Data: []byte(fmt.Sprintf("Only the lobby owner can change MaxPlayers setting."))})
 	}
 }

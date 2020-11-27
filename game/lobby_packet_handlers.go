@@ -125,12 +125,12 @@ func (l *Lobby) chooseWord(p *Packet, bytes []byte, from *Player) error {
 		return fmt.Errorf("error decoding chosen word data: %s", err)
 	}
 
-	drawer := l.Drawer
-	if from == drawer && len(l.WordChoice) > 0 && chosenIndex >= 0 && chosenIndex <= 2 {
-		l.CurrentWord = l.WordChoice[chosenIndex]
-		l.WordChoice = nil
-		l.WordHints = createWordHintFor(l.CurrentWord, false)
-		l.WordHintsShown = createWordHintFor(l.CurrentWord, true)
+	drawer := l.State.Drawer
+	if from.userSession == drawer && len(l.State.WordChoice) > 0 && chosenIndex >= 0 && chosenIndex <= 2 {
+		l.State.CurrentWord = l.State.WordChoice[chosenIndex]
+		l.State.WordChoice = nil
+		l.State.WordHints = createWordHintFor(l.State.CurrentWord, false)
+		l.State.WordHintsShown = createWordHintFor(l.State.CurrentWord, true)
 		l.triggerWordHintUpdate()
 	}
 	return nil
@@ -163,7 +163,7 @@ func (l *Lobby) kickVote(p *Packet, bytes []byte, from *Player) error {
 		return fmt.Errorf("error decoding kick-vote data: %s", err)
 	}
 
-	if !l.EnableVotekick {
+	if !l.Settings.EnableVotekick {
 		// Votekicking is disabled in the lobby
 		// We tell the user and do not continue with the event
 		WriteAsJSON(from, Packet{Type: "system-message", Data: []byte("Votekick is disabled in this lobby!")})
@@ -176,13 +176,13 @@ func (l *Lobby) kickVote(p *Packet, bytes []byte, from *Player) error {
 
 func (l *Lobby) start(p *Packet, bytes []byte, from *Player) error {
 
-	if l.Round == 0 && from == l.Owner {
-		for _, otherPlayer := range l.Players {
+	if l.State.Round == 0 && from.userSession == l.State.Owner {
+		for _, otherPlayer := range l.State.Players {
 			otherPlayer.Score = 0
 			otherPlayer.LastScore = 0
 		}
 
-		l.Round = 1
+		l.State.Round = 1
 
 		l.advanceLobby()
 	}

@@ -11,30 +11,23 @@ import (
 
 func NewTestLobby() *game.Lobby {
 	return &game.Lobby{
-		ID:                "test-id",
-		DrawingTime:       120,
-		MaxRounds:         3,
-		MaxPlayers:        6,
-		CustomWords:       []string{},
-		Words:             []string{},
-		Players:           []*game.Player{&game.Player{}},
-		Drawer:            &game.Player{},
-		Owner:             &game.Player{},
-		CurrentWord:       "cyborg",
-		WordHints:         []*game.WordHint{&game.WordHint{}},
-		WordHintsShown:    []*game.WordHint{&game.WordHint{}},
-		Round:             0,
-		WordChoice:        []string{"cyborg", "bruce lee", "big mac"},
-		RoundEndTime:      time.Now().Add(time.Second * 120).Unix(),
-		CustomWordsChance: 0,
-		ClientsPerIPLimit: 2,
-		CurrentDrawing:    []interface{}{},
-		EnableVotekick:    true,
+		ID: "test-id",
+		CurrentDrawing: &game.LobbyDrawing{
+			CurrentDrawing: []game.LobbyDrawOp{},
+		},
+		Settings: &game.LobbySettings{},
 
-		// timeLeftTicker:        time.NewTicker(),
-		// timeLeftTickerReset:   make(chan struct{}),
-		// scoreEarnedByGuessers: 0,
-		// alreadyUsedWords:      []string{},
+		State: &game.LobbyState{
+			Players:        map[string]*game.Player{},
+			Drawer:         "",
+			Owner:          "",
+			CurrentWord:    "cyborg",
+			WordHints:      []*game.WordHint{&game.WordHint{}},
+			WordHintsShown: []*game.WordHint{&game.WordHint{}},
+			Round:          0,
+			WordChoice:     []string{"cyborg", "bruce lee", "big mac"},
+			RoundEndTime:   time.Now().Add(time.Second * 120).Unix(),
+		},
 	}
 }
 

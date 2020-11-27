@@ -13,7 +13,7 @@ func GetLobby(id string) *Lobby {
 }
 
 func (l *Lobby) HasConnectedPlayers() bool {
-	for _, p := range l.Players {
+	for _, p := range l.State.Players {
 		if p.Connected {
 			return true
 		}
@@ -21,11 +21,30 @@ func (l *Lobby) HasConnectedPlayers() bool {
 
 	return false
 }
+func (l *Lobby) nextDrawer() *Player {
+	for _, p := range l.State.Players {
+		if !p.Drawn && p.Connected {
+			return p
+		}
+	}
+	return nil
+}
 
 // GetPlayer searches for a player, identifying them by usersession.
 func (l *Lobby) GetPlayer(userSession string) *Player {
-	for _, player := range l.Players {
+	for _, player := range l.State.Players {
 		if player.userSession == userSession {
+			return player
+		}
+	}
+
+	return nil
+}
+
+// GetPlayer searches for a player, identifying them by usersession.
+func (l *Lobby) GetPlayerById(id string) *Player {
+	for _id, player := range l.State.Players {
+		if id == _id {
 			return player
 		}
 	}
@@ -38,18 +57,18 @@ func (l *Lobby) GetAvailableWordHints(player *Player) []*WordHint {
 	//the hints for displaying the word, instead of having yet another GUI
 	//element that wastes space.
 	if player.State == PlayerStateDrawing || player.State == PlayerStateStandby {
-		return l.WordHintsShown
+		return l.State.WordHintsShown
 	} else {
-		return l.WordHints
+		return l.State.WordHints
 	}
 }
 
 func (l *Lobby) canDraw(player *Player) bool {
-	return l.Drawer == player && l.CurrentWord != ""
+	return l.State.Drawer == player.ID && l.State.CurrentWord != ""
 }
 
 func (l *Lobby) isAnyoneStillGuessing() bool {
-	for _, otherPlayer := range l.Players {
+	for _, otherPlayer := range l.State.Players {
 		if otherPlayer.State == PlayerStateGuessing && otherPlayer.Connected {
 			return true
 		}

@@ -10,57 +10,76 @@ import (
 
 // Lobby represents a game session.
 type Lobby struct {
-	// ID uniquely identified the Lobby.
 	ID string
 
-	// DrawingTime is the amount of seconds that each player has available to
-	// finish their drawing.
-	DrawingTime int
-	// MaxRounds defines how many iterations a lobby does before the game ends.
-	// One iteration means every participant does one drawing.
-	MaxRounds int
-	// MaxPlayers defines the maximum amount of players in a single lobby.
-	MaxPlayers int
-	// CustomWords are additional words that will be used in addition to the
-	// predefined words.
-	CustomWords []string
-	Words       []string
+	Settings *LobbySettings
 
-	// Players references all participants of the Lobby.
-	Players []*Player
+	CurrentDrawing *LobbyDrawing
 
-	// Drawer references the Player that is currently drawing.
-	Drawer *Player
-	// Owner references the Player that created the lobby.
-	Owner *Player
-	// CurrentWord represents the word that was last selected. If no word has
-	// been selected yet or the round is already over, this should be empty.
-	CurrentWord string
-	// WordHints for the current word.
-	WordHints []*WordHint
-	// WordHintsShown are the same as WordHints with characters visible.
-	WordHintsShown []*WordHint
-	// Round is the round that the Lobby is currently in. This is a number
-	// between 0 and MaxRounds. 0 indicates that it hasn't started yet.
-	Round int
-	// WordChoice represents the current choice of words.
-	WordChoice []string
-	// RoundEndTime represents the time at which the current round will end.
-	// This is a UTC unix-timestamp in milliseconds.
-	RoundEndTime int64
+	State *LobbyState
 
+	// calculated on init
+	words                 []string
 	timeLeftTicker        *time.Ticker
 	timeLeftTickerReset   chan struct{}
 	scoreEarnedByGuessers int
 	alreadyUsedWords      []string
-	CustomWordsChance     int
-	ClientsPerIPLimit     int
-	// CurrentDrawing represents the state of the current canvas. The elements
-	// consist of LineEvent and FillEvent. Please do not modify the contents
-	// of this array an only move AppendLine and AppendFill on the respective
-	// lobby object.
-	CurrentDrawing []interface{}
-	EnableVotekick bool
+}
+
+func (m *Lobby) MarshalBinary() ([]byte, error) {
+	return msgpack.Marshal(&m)
+}
+
+// https://github.com/go-redis/redis/issues/739
+func (m *Lobby) UnmarshalBinary(data []byte) error {
+	return msgpack.Unmarshal(data, &m)
+}
+
+type LobbySettings struct {
+	DrawingTime       int
+	Rounds            int
+	MaxPlayers        int
+	CustomWords       []string
+	CustomWordsChance int
+	ClientsPerIPLimit int
+	EnableVotekick    bool
+}
+
+func (m *LobbySettings) MarshalBinary() ([]byte, error) {
+	return msgpack.Marshal(&m)
+}
+
+func (m *LobbySettings) UnmarshalBinary(data []byte) error {
+	return msgpack.Unmarshal(data, &m)
+}
+
+type LobbyState struct {
+	Owner   string             // Owner references the Player that created the lobby.
+	Players map[string]*Player // Players references all participants of the Lobby.
+
+	Drawer       string // Drawer references the Player that is currently drawing.
+	Round        int    // Round  between 0 and MaxRounds. 0 indicates that it hasn't started yet.
+	RoundEndTime int64  // RoundEndTime unix timestamp
+	// CurrentWord represents the word that was last selected. If no word has
+	// been selected yet or the round is already over, this should be empty.
+	CurrentWord    string
+	WordChoice     []string    // WordChoice represents the current choice of words.
+	WordHints      []*WordHint // WordHints for the current word.
+	WordHintsShown []*WordHint // WordHintsShown are the same as WordHints with characters visible.
+
+}
+
+func (m *LobbyState) MarshalBinary() ([]byte, error) {
+	return msgpack.Marshal(&m)
+}
+
+func (m *LobbyState) UnmarshalBinary(data []byte) error {
+	return msgpack.Unmarshal(data, &m)
+}
+
+type LobbyDrawOp interface{}
+type LobbyDrawing struct {
+	CurrentDrawing []LobbyDrawOp
 }
 
 // SettingBounds defines the lower and upper bounds for the user-specified
@@ -106,77 +125,23 @@ type Rounds struct {
 	MaxRounds int `json:"maxRounds"`
 }
 
-// Message represents a message in the chatroom.
-type Message struct {
-	// Author is the player / thing that wrote the message
-	Author string `json:"author"`
-	// Content is the actual message text.
-	Content string `json:"content"`
-}
-
-// Ready represents the initial state that a user needs upon connection.
-// This includes all the necessary things for properly running a client
-// without receiving any more data.
-type Ready struct {
-	PlayerID string `json:"playerId"`
-	Drawing  bool   `json:"drawing"`
-
-	OwnerID        string        `json:"ownerId"`
-	Round          int           `json:"round"`
-	MaxRound       int           `json:"maxRounds"`
-	RoundEndTime   int64         `json:"roundEndTime"`
-	WordHints      []*WordHint   `json:"wordHints"`
-	Players        []*Player     `json:"players"`
-	CurrentDrawing []interface{} `json:"currentDrawing"`
-}
-
-type NewLobbyParams struct {
-	DrawingTime       int
-	Rounds            int
-	MaxPlayers        int
-	CustomWords       []string
-	CustomWordsChance int
-	ClientsPerIPLimit int
-	EnableVotekick    bool
-}
-
-func (m *Lobby) MarshalBinary() ([]byte, error) {
-	return msgpack.Marshal(&m)
-}
-
-// https://github.com/go-redis/redis/issues/739
-func (m *Lobby) UnmarshalBinary(data []byte) error {
-	return msgpack.Unmarshal(data, &m)
-}
-
-func LoadLobbies() {
-
-}
-
-func SaveLobby() {
-
-}
-
 // NewLobby allows creating a lobby, optionally returning errors that
 // occured during creation.
-func NewLobby(ownerName, language string, params NewLobbyParams) (string, *Lobby, error) {
+func NewLobby(ownerName, language string, settings LobbySettings) (string, *Lobby, error) {
 
 	lobby := &Lobby{
-		ID:                  uuid.NewV4().String(),
-		DrawingTime:         params.DrawingTime,
-		MaxRounds:           params.Rounds,
-		MaxPlayers:          params.MaxPlayers,
-		CustomWords:         params.CustomWords,
-		CustomWordsChance:   params.CustomWordsChance,
+		ID: uuid.NewV4().String(),
+
+		Settings:       &settings,
+		State:          &LobbyState{},
+		CurrentDrawing: &LobbyDrawing{CurrentDrawing: []LobbyDrawOp{}},
+
 		timeLeftTickerReset: make(chan struct{}),
-		ClientsPerIPLimit:   params.ClientsPerIPLimit,
-		EnableVotekick:      params.EnableVotekick,
-		CurrentDrawing:      []interface{}{},
 	}
 
-	if len(params.CustomWords) > 1 {
-		rand.Shuffle(len(lobby.CustomWords), func(i, j int) {
-			lobby.CustomWords[i], lobby.CustomWords[j] = lobby.CustomWords[j], lobby.CustomWords[i]
+	if len(settings.CustomWords) > 1 {
+		rand.Shuffle(len(lobby.Settings.CustomWords), func(i, j int) {
+			lobby.Settings.CustomWords[i], lobby.Settings.CustomWords[j] = lobby.Settings.CustomWords[j], lobby.Settings.CustomWords[i]
 		})
 	}
 
@@ -186,8 +151,8 @@ func NewLobby(ownerName, language string, params NewLobbyParams) (string, *Lobby
 
 	player := createPlayer(ownerName)
 
-	lobby.Players = append(lobby.Players, player)
-	lobby.Owner = player
+	lobby.State.Players[player.ID] = player
+	lobby.State.Owner = player.ID
 
 	// Read wordlist according to the chosen language
 	words, err := readWordList(language)
@@ -196,7 +161,7 @@ func NewLobby(ownerName, language string, params NewLobbyParams) (string, *Lobby
 		return "", nil, err
 	}
 
-	lobby.Words = words
+	lobby.words = words
 
 	return player.userSession, lobby, nil
 }

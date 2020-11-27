@@ -62,11 +62,11 @@ func readWordList(chosenLanguage string) ([]string, error) {
 func (l *Lobby) GetRandomWords() []string {
 	rand.Seed(time.Now().Unix())
 	wordsNotToPick := l.alreadyUsedWords
-	wordOne := l.getRandomWordWithCustomWordChance(wordsNotToPick, l.CustomWords, l.CustomWordsChance)
+	wordOne := l.getRandomWordWithCustomWordChance(wordsNotToPick, l.Settings.CustomWords, l.Settings.CustomWordsChance)
 	wordsNotToPick = append(wordsNotToPick, wordOne)
-	wordTwo := l.getRandomWordWithCustomWordChance(wordsNotToPick, l.CustomWords, l.CustomWordsChance)
+	wordTwo := l.getRandomWordWithCustomWordChance(wordsNotToPick, l.Settings.CustomWords, l.Settings.CustomWordsChance)
 	wordsNotToPick = append(wordsNotToPick, wordTwo)
-	wordThree := l.getRandomWordWithCustomWordChance(wordsNotToPick, l.CustomWords, l.CustomWordsChance)
+	wordThree := l.getRandomWordWithCustomWordChance(wordsNotToPick, l.Settings.CustomWords, l.Settings.CustomWordsChance)
 
 	return []string{
 		wordOne,
@@ -104,7 +104,7 @@ func (l *Lobby) getUnusedRandomWord(wordsAlreadyUsed []string) string {
 	var word string
 OUTER_LOOP:
 	for {
-		word = l.Words[rand.Int()%len(l.Words)]
+		word = l.words[rand.Int()%len(l.words)]
 		for _, usedWord := range wordsAlreadyUsed {
 			if usedWord == word {
 				if randomnessAttempts == 100 {

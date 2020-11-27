@@ -31,7 +31,7 @@ var WriteAsJSON func(player *Player, object interface{}) error
 var WritePublicSystemMessage func(lobby *Lobby, text string)
 
 func (l *Lobby) triggerPlayersUpdate() {
-	TriggerComplexUpdateEvent("update-players", l.Players, l)
+	TriggerComplexUpdateEvent("update-players", l.State.Players, l)
 }
 
 func (l *Lobby) triggerCorrectGuessEvent() {
@@ -39,11 +39,35 @@ func (l *Lobby) triggerCorrectGuessEvent() {
 }
 
 func (l *Lobby) triggerWordHintUpdate() {
-	if l.CurrentWord == "" {
+	if l.State.CurrentWord == "" {
 		return
 	}
 
 	TriggerComplexUpdatePerPlayerEvent("update-wordhint", func(player *Player) interface{} {
 		return l.GetAvailableWordHints(player)
 	}, l)
+}
+
+// Message represents a message in the chatroom.
+type Message struct {
+	// Author is the player / thing that wrote the message
+	Author string `json:"author"`
+	// Content is the actual message text.
+	Content string `json:"content"`
+}
+
+// Ready represents the initial state that a user needs upon connection.
+// This includes all the necessary things for properly running a client
+// without receiving any more data.
+type Ready struct {
+	PlayerID string `json:"playerId"`
+	Drawing  bool   `json:"drawing"`
+
+	OwnerID        string        `json:"ownerId"`
+	Round          int           `json:"round"`
+	MaxRound       int           `json:"maxRounds"`
+	RoundEndTime   int64         `json:"roundEndTime"`
+	WordHints      []*WordHint   `json:"wordHints"`
+	Players        []*Player     `json:"players"`
+	CurrentDrawing []LobbyDrawOp `json:"currentDrawing"`
 }

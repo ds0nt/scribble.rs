@@ -41,6 +41,8 @@ type Player struct {
 	// While checking the websocket against nil would be enough, we still need
 	// this field for sending it via the APIs.
 	Connected bool `json:"connected"`
+	Drawn     bool `json:"drawn"`
+
 	// Rank is the current ranking of the player in his Lobby
 	LastScore int         `json:"lastScore"`
 	Rank      int         `json:"rank"`
