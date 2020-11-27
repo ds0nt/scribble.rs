@@ -65,12 +65,20 @@ func (l *Lobby) Connect(player *Player) {
 	if l.State.Drawer == player.ID && l.State.CurrentWord == "" {
 		l.sendWordChoice()
 	}
-	if l.State.Drawer == "" {
-		l.startRound()
+	if l.State.Drawer != "" {
+		l.triggerPlayersUpdate()
+		return
 	}
 
-	//TODO Only send to everyone except for the new player, since it's part of the ready event.
+	if l.State.Round == 0 {
+		l.State.Round = 1
+	}
+	l.State.Drawer = player.ID
+	player.State = PlayerStateDrawing
+
 	l.triggerPlayersUpdate()
+	l.startRound()
+	return
 }
 
 func (l *Lobby) Disconnect(player *Player) {
@@ -181,12 +189,10 @@ func (l *Lobby) advanceLobby() {
 
 	l.State.Drawer = next.ID
 	next.State = PlayerStateDrawing
-
-	l.startRound()
-
 	l.triggerPlayersUpdate()
 	l.sendWordChoice()
 
+	l.startRound()
 }
 
 func (l *Lobby) startRound() {

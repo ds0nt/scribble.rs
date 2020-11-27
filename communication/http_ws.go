@@ -49,7 +49,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player := lobby.GetPlayer(sessionCookie)
+	player := lobby.GetPlayerBySession(sessionCookie)
 	if player == nil {
 		http.Error(w, "you don't have access to this lobby;usersession invalid", http.StatusUnauthorized)
 		return

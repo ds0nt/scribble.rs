@@ -40,7 +40,7 @@ func userSession(r *http.Request) string {
 }
 
 func getPlayer(lobby *game.Lobby, r *http.Request) *game.Player {
-	return lobby.GetPlayer(userSession(r))
+	return lobby.GetPlayerBySession(userSession(r))
 }
 
 func getPlayernameHandler(r *http.Request) string {

@@ -36,7 +36,8 @@ bounce-redis:
 	docker-compose exec redis_test redis-cli flushall
 
 start-redis:
-	docker-compose up -d
+	docker-compose up -d redis_test
+	docker-compose exec redis_test redis-cli flushall
 	
 stop-redis:
 	docker-compose stop
@@ -44,5 +45,8 @@ stop-redis:
 
 test: bounce-redis
 	go test -v ./...
+
+test-game: bounce-redis
+	go test -v ./game
 
 PHONY: test, stop-redis start-redis bounce-redis destroy down up dockerize build clean

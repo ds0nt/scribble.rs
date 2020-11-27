@@ -30,8 +30,8 @@ func (l *Lobby) nextDrawer() *Player {
 	return nil
 }
 
-// GetPlayer searches for a player, identifying them by usersession.
-func (l *Lobby) GetPlayer(userSession string) *Player {
+// GetPlayerBySession searches for a player, identifying them by usersession.
+func (l *Lobby) GetPlayerBySession(userSession string) *Player {
 	for _, player := range l.State.Players {
 		if player.userSession == userSession {
 			return player

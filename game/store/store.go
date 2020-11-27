@@ -20,10 +20,8 @@ type RedisStore struct {
 	client *redis.Client
 }
 
-func NewRedisStore() *RedisStore {
-	client := redis.NewClient(&redis.Options{
-		Addr: "127.0.01:6379",
-	})
+func NewRedisStore(options *redis.Options) *RedisStore {
+	client := redis.NewClient(options)
 	return &RedisStore{
 		client: client,
 	}

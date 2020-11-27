@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/scribble-rs/scribble.rs/game"
 	"github.com/stretchr/testify/require"
 )
@@ -43,7 +44,9 @@ func requireLobbiesEqual(t *testing.T, expected, actual *game.Lobby) {
 func TestSaveLobby(t *testing.T) {
 	stores := []Store{
 		// NewMemStore(),
-		NewRedisStore(),
+		NewRedisStore(&redis.Options{
+			Addr: "127.0.01:6379",
+		}),
 	}
 
 	for _, st := range stores {

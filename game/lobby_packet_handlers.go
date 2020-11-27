@@ -118,7 +118,6 @@ func (l *Lobby) clearDrawingBoard(p *Packet, bytes []byte, from *Player) error {
 }
 
 func (l *Lobby) chooseWord(p *Packet, bytes []byte, from *Player) error {
-
 	chosenIndex := 0
 	err := json.Unmarshal(p.Data, &chosenIndex)
 	if err != nil {
@@ -126,7 +125,7 @@ func (l *Lobby) chooseWord(p *Packet, bytes []byte, from *Player) error {
 	}
 
 	drawer := l.State.Drawer
-	if from.userSession == drawer && len(l.State.WordChoice) > 0 && chosenIndex >= 0 && chosenIndex <= 2 {
+	if from.ID == drawer && len(l.State.WordChoice) > 0 && chosenIndex >= 0 && chosenIndex <= 2 {
 		l.State.CurrentWord = l.State.WordChoice[chosenIndex]
 		l.State.WordChoice = nil
 		l.State.WordHints = createWordHintFor(l.State.CurrentWord, false)
@@ -176,7 +175,7 @@ func (l *Lobby) kickVote(p *Packet, bytes []byte, from *Player) error {
 
 func (l *Lobby) start(p *Packet, bytes []byte, from *Player) error {
 
-	if l.State.Round == 0 && from.userSession == l.State.Owner {
+	if l.State.Round == 0 && from.ID == l.State.Owner {
 		for _, otherPlayer := range l.State.Players {
 			otherPlayer.Score = 0
 			otherPlayer.LastScore = 0

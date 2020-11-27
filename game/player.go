@@ -61,6 +61,10 @@ func createPlayer(name string) *Player {
 	}
 }
 
+func (p *Player) GetSession() string {
+	return p.userSession
+}
+
 // GetWebsocket simply returns the players websocket connection. This method
 // exists to encapsulate the websocket field and prevent accidental sending
 // the websocket data via the network.

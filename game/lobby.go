@@ -127,13 +127,15 @@ type Rounds struct {
 
 // NewLobby allows creating a lobby, optionally returning errors that
 // occured during creation.
-func NewLobby(ownerName, language string, settings LobbySettings) (string, *Lobby, error) {
+func NewLobby(ownerName, language string, settings LobbySettings) (*Player, *Lobby, error) {
 
 	lobby := &Lobby{
 		ID: uuid.NewV4().String(),
 
-		Settings:       &settings,
-		State:          &LobbyState{},
+		Settings: &settings,
+		State: &LobbyState{
+			Players: map[string]*Player{},
+		},
 		CurrentDrawing: &LobbyDrawing{CurrentDrawing: []LobbyDrawOp{}},
 
 		timeLeftTickerReset: make(chan struct{}),
@@ -158,10 +160,10 @@ func NewLobby(ownerName, language string, settings LobbySettings) (string, *Lobb
 	words, err := readWordList(language)
 	if err != nil {
 		//TODO Remove lobby, since we errored.
-		return "", nil, err
+		return nil, nil, err
 	}
 
 	lobby.words = words
 
-	return player.userSession, lobby, nil
+	return player, lobby, nil
 }
