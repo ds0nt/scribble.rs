@@ -27,20 +27,20 @@ func enterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if player == nil {
-		if len(lobby.Players) >= lobby.MaxPlayers {
+		if len(lobby.State.Players) >= lobby.Settings.MaxPlayers {
 			http.Error(w, "lobby already full", http.StatusUnauthorized)
 			return
 		}
 
 		matches := 0
-		for _, otherPlayer := range lobby.Players {
+		for _, otherPlayer := range lobby.State.Players {
 			socket := otherPlayer.GetWebsocket()
 			if socket != nil && remoteAddressToSimpleIP(socket.RemoteAddr().String()) == remoteAddressToSimpleIP(r.RemoteAddr) {
 				matches++
 			}
 		}
 
-		if matches >= lobby.ClientsPerIPLimit {
+		if matches >= lobby.Settings.ClientsPerIPLimit {
 			http.Error(w, "maximum amount of player per IP reached", http.StatusUnauthorized)
 			return
 		}

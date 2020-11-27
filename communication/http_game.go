@@ -85,7 +85,7 @@ func getPlayersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(lobby.Players)
+	err = json.NewEncoder(w).Encode(lobby.State.Players)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -105,7 +105,7 @@ func getRoundsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(game.Rounds{Round: lobby.Round, MaxRounds: lobby.MaxRounds})
+	err = json.NewEncoder(w).Encode(game.Rounds{Round: lobby.State.Round, MaxRounds: lobby.Settings.Rounds})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -177,20 +177,20 @@ func ssrEnterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 	var templateError error
 
 	if player == nil {
-		if len(lobby.Players) >= lobby.MaxPlayers {
+		if len(lobby.State.Players) >= lobby.Settings.MaxPlayers {
 			userFacingError(w, "Sorry, but the lobby is full.")
 			return
 		}
 
 		matches := 0
-		for _, otherPlayer := range lobby.Players {
+		for _, otherPlayer := range lobby.State.Players {
 			socket := otherPlayer.GetWebsocket()
 			if socket != nil && remoteAddressToSimpleIP(socket.RemoteAddr().String()) == remoteAddressToSimpleIP(r.RemoteAddr) {
 				matches++
 			}
 		}
 
-		if matches >= lobby.ClientsPerIPLimit {
+		if matches >= lobby.Settings.ClientsPerIPLimit {
 			userFacingError(w, "Sorry, but you have exceeded the maximum number of clients per IP.")
 			return
 		}

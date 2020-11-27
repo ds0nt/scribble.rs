@@ -53,7 +53,7 @@ func TestSaveLobby(t *testing.T) {
 		err := st.Save(l)
 		require.Nil(t, err)
 
-		lobby, err := st.FindByID(l.ID)
+		lobby, err := st.Load(l.ID)
 		require.Nil(t, err)
 
 		requireLobbiesEqual(t, l, lobby)

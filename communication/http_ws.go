@@ -116,7 +116,7 @@ func wsListen(l *game.Lobby, player *game.Player, socket *websocket.Conn) {
 
 // TODO: correct this cross-package callback voodoo.
 func SendDataToOtherPlayers(sender *game.Player, lobby *game.Lobby, data interface{}) {
-	for _, player := range lobby.Players {
+	for _, player := range lobby.State.Players {
 		if player != sender {
 			WriteAsJSON(player, data)
 		}
@@ -125,7 +125,7 @@ func SendDataToOtherPlayers(sender *game.Player, lobby *game.Lobby, data interfa
 
 func TriggerSimpleUpdateEvent(eventType string, lobby *game.Lobby) {
 	event := &jsEvent{Type: eventType}
-	for _, player := range lobby.Players {
+	for _, player := range lobby.State.Players {
 		//FIXME Why did i use a goroutine here but not anywhere else?
 
 		go func(player *game.Player) {
@@ -136,13 +136,13 @@ func TriggerSimpleUpdateEvent(eventType string, lobby *game.Lobby) {
 
 func TriggerComplexUpdateEvent(eventType string, data interface{}, lobby *game.Lobby) {
 	event := &jsEvent{Type: eventType, Data: data}
-	for _, player := range lobby.Players {
+	for _, player := range lobby.State.Players {
 		WriteAsJSON(player, event)
 	}
 }
 
 func TriggerComplexUpdatePerPlayerEvent(eventType string, data func(*game.Player) interface{}, lobby *game.Lobby) {
-	for _, player := range lobby.Players {
+	for _, player := range lobby.State.Players {
 		WriteAsJSON(player, &jsEvent{Type: eventType, Data: data(player)})
 	}
 }
@@ -163,7 +163,7 @@ func WriteAsJSON(player *game.Player, object interface{}) error {
 
 func WritePublicSystemMessage(lobby *game.Lobby, text string) {
 	playerHasBeenKickedMsg := &jsEvent{Type: "system-message", Data: html.EscapeString(text)}
-	for _, otherPlayer := range lobby.Players {
+	for _, otherPlayer := range lobby.State.Players {
 
 		WriteAsJSON(otherPlayer, playerHasBeenKickedMsg)
 	}

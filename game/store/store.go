@@ -10,7 +10,7 @@ import (
 type Store interface {
 	SaveSettings(id string, l *game.LobbySettings) error
 	SaveState(id string, s *game.LobbyState) error
-	SaveDrawOp(id string, l *game.LobbyDrawOp) error
+	SaveDrawOp(id string, l ...game.LobbyDrawOp) error
 
 	Load(id string) (*game.Lobby, error)
 	Save(*game.Lobby) error
