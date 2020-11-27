@@ -4,9 +4,21 @@ import (
 	"sync"
 )
 
+type LobbyStore interface {
+	SaveSettings(id string, l *LobbySettings) error
+	SaveState(id string, s *LobbyState) error
+	SaveDrawOp(id string, l ...*Packet) error
+	UndoDrawOp(id string) error
+	ClearDrawing(id string) error
+	Load(id string) (*Lobby, error)
+	Save(*Lobby) error
+}
+
 var (
-	lobbies            []*Lobby
-	lobbiesMu          = &sync.Mutex{}
+	lobbies   []*Lobby
+	lobbiesMu = &sync.Mutex{}
+
+	Store              LobbyStore // Store to load and save lobby data
 	LobbySettingBounds = &SettingBounds{
 		MinDrawingTime:       60,
 		MaxDrawingTime:       300,
@@ -63,11 +75,11 @@ type Ready struct {
 	PlayerID string `json:"playerId"`
 	Drawing  bool   `json:"drawing"`
 
-	OwnerID        string        `json:"ownerId"`
-	Round          int           `json:"round"`
-	MaxRound       int           `json:"maxRounds"`
-	RoundEndTime   int64         `json:"roundEndTime"`
-	WordHints      []*WordHint   `json:"wordHints"`
-	Players        []*Player     `json:"players"`
-	CurrentDrawing []LobbyDrawOp `json:"currentDrawing"`
+	OwnerID        string      `json:"ownerId"`
+	Round          int         `json:"round"`
+	MaxRound       int         `json:"maxRounds"`
+	RoundEndTime   int64       `json:"roundEndTime"`
+	WordHints      []*WordHint `json:"wordHints"`
+	Players        []*Player   `json:"players"`
+	CurrentDrawing []*Packet   `json:"currentDrawing"`
 }

@@ -93,7 +93,7 @@ func (l *Lobby) line(p *Packet, bytes []byte, from *Player) error {
 	if err != nil {
 		return fmt.Errorf("error decoding line data: %s", err)
 	}
-	l.AppendLine(&LineEvent{Type: p.Type, Data: line})
+	l.AppendLine(p)
 
 	//We directly forward the event, as it seems to be valid.
 	SendDataToOtherPlayers(from, l, p)
@@ -108,7 +108,7 @@ func (l *Lobby) fill(p *Packet, bytes []byte, from *Player) error {
 	if err != nil {
 		return fmt.Errorf("error decoding fill data: %s", err)
 	}
-	l.AppendFill(&FillEvent{Type: p.Type, Data: fill})
+	l.AppendFill(p)
 
 	//We directly forward the event, as it seems to be valid.
 	SendDataToOtherPlayers(from, l, p)

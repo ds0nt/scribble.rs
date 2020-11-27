@@ -14,7 +14,7 @@ func NewTestLobby() *game.Lobby {
 	return &game.Lobby{
 		ID: "test-id",
 		CurrentDrawing: &game.LobbyDrawing{
-			CurrentDrawing: []game.LobbyDrawOp{},
+			CurrentDrawing: []*game.Packet{},
 		},
 		Settings: &game.LobbySettings{},
 
@@ -42,7 +42,7 @@ func requireLobbiesEqual(t *testing.T, expected, actual *game.Lobby) {
 }
 
 func TestSaveLobby(t *testing.T) {
-	stores := []Store{
+	stores := []*RedisStore{
 		// NewMemStore(),
 		NewRedisStore(&redis.Options{
 			Addr: "127.0.01:6379",

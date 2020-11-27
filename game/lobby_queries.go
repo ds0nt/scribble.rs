@@ -12,6 +12,24 @@ func GetLobby(id string) *Lobby {
 	return nil
 }
 
+func GetLoadLobby(id string) (*Lobby, error) {
+	lobby := GetLobby(id)
+	if lobby != nil {
+		return lobby, nil
+	}
+
+	lobby, err := Store.Load(id)
+	if err != nil {
+		return nil, err
+	}
+
+	lobbiesMu.Lock()
+	lobbies = append(lobbies, lobby)
+	lobbiesMu.Unlock()
+
+	return lobby, nil
+}
+
 func (l *Lobby) HasConnectedPlayers() bool {
 	for _, p := range l.State.Players {
 		if p.Connected {

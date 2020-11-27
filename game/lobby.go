@@ -77,9 +77,16 @@ func (m *LobbyState) UnmarshalBinary(data []byte) error {
 	return msgpack.Unmarshal(data, &m)
 }
 
-type LobbyDrawOp interface{}
+func (m *Packet) MarshalBinary() ([]byte, error) {
+	return msgpack.Marshal(&m)
+}
+
+func (m *Packet) UnmarshalBinary(data []byte) error {
+	return msgpack.Unmarshal(data, &m)
+}
+
 type LobbyDrawing struct {
-	CurrentDrawing []LobbyDrawOp
+	CurrentDrawing []*Packet
 }
 
 // SettingBounds defines the lower and upper bounds for the user-specified
@@ -136,7 +143,7 @@ func NewLobby(ownerName, language string, settings LobbySettings) (*Player, *Lob
 		State: &LobbyState{
 			Players: map[string]*Player{},
 		},
-		CurrentDrawing: &LobbyDrawing{CurrentDrawing: []LobbyDrawOp{}},
+		CurrentDrawing: &LobbyDrawing{CurrentDrawing: []*Packet{}},
 
 		timeLeftTickerReset: make(chan struct{}),
 	}
@@ -164,6 +171,8 @@ func NewLobby(ownerName, language string, settings LobbySettings) (*Player, *Lob
 	}
 
 	lobby.words = words
+
+	Store.Save(lobby)
 
 	return player, lobby, nil
 }

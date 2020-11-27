@@ -85,6 +85,9 @@ func (player *Player) SetWebsocket(socket *websocket.Conn) {
 func (player *Player) GetWebsocketMutex() *sync.Mutex {
 	return player.wsMu
 }
+func (player *Player) SetWebsocketMutex(mu *sync.Mutex) {
+	player.wsMu = mu
+}
 
 // GeneratePlayerName creates a new playername. A so called petname. It consists
 // of an adverb, an adjective and a animal name. The result can generally be

@@ -33,6 +33,11 @@ func (l *Lobby) JoinPlayer(playerName string) string {
 	l.State.Players[player.ID] = player
 	l.triggerPlayersUpdate()
 
+	err := Store.SaveState(l.ID, l.State)
+	if err != nil {
+		fmt.Println("store save error:", err)
+	}
+
 	return player.userSession
 }
 
@@ -75,6 +80,10 @@ func (l *Lobby) Connect(player *Player) {
 
 	l.triggerPlayersUpdate()
 
+	err = Store.SaveState(l.ID, l.State)
+	if err != nil {
+		fmt.Println("store save error:", err)
+	}
 	return
 }
 
@@ -87,11 +96,17 @@ func (l *Lobby) Disconnect(player *Player) {
 	player.Connected = false
 	player.ws = nil
 
+	err := Store.SaveState(l.ID, l.State)
+	if err != nil {
+		fmt.Println("store save error:", err)
+	}
+
 	if !l.HasConnectedPlayers() {
 		RemoveLobby(l.ID)
 		log.Printf("There are currently %d open lobbies.\n", len(lobbies))
 	} else {
 		l.triggerPlayersUpdate()
+
 		if l.State.Drawer == player.ID {
 			l.advanceLobby()
 		}
@@ -99,7 +114,12 @@ func (l *Lobby) Disconnect(player *Player) {
 }
 
 func (l *Lobby) ClearDrawing() {
-	l.CurrentDrawing.CurrentDrawing = []LobbyDrawOp{}
+	l.CurrentDrawing.CurrentDrawing = []*Packet{}
+
+	err := Store.ClearDrawing(l.ID)
+	if err != nil {
+		fmt.Println("store clear drawing error:", err)
+	}
 }
 
 func (l *Lobby) sendWordChoice() {
@@ -122,8 +142,13 @@ type LineEvent struct {
 // AppendLine adds a line direction to the current drawing. This exists in order
 // to prevent adding arbitrary elements to the drawing, as the backing array is
 // an empty interface type.
-func (l *Lobby) AppendLine(line *LineEvent) {
+func (l *Lobby) AppendLine(line *Packet) {
 	l.CurrentDrawing.CurrentDrawing = append(l.CurrentDrawing.CurrentDrawing, line)
+
+	err := Store.SaveDrawOp(l.ID, line)
+	if err != nil {
+		fmt.Println("store SaveDrawOp error:", err)
+	}
 }
 
 // LineEvent is basically the same as LobbyEvent, but with a specific Data type.
@@ -143,12 +168,22 @@ type UndoEvent struct {
 // AppendFill adds a fill direction to the current drawing. This exists in order
 // to prevent adding arbitrary elements to the drawing, as the backing array is
 // an empty interface type.
-func (l *Lobby) AppendFill(fill *FillEvent) {
+func (l *Lobby) AppendFill(fill *Packet) {
 	l.CurrentDrawing.CurrentDrawing = append(l.CurrentDrawing.CurrentDrawing, fill)
+
+	err := Store.SaveDrawOp(l.ID, fill)
+	if err != nil {
+		fmt.Println("store SaveDrawOp error:", err)
+	}
 }
 
 func (l *Lobby) Undo() {
 	l.CurrentDrawing.CurrentDrawing = l.CurrentDrawing.CurrentDrawing[:len(l.CurrentDrawing.CurrentDrawing)-1]
+
+	err := Store.UndoDrawOp(l.ID)
+	if err != nil {
+		fmt.Println("store SaveDrawOp error:", err)
+	}
 }
 
 // NextTurn represents the data necessary for displaying the lobby state right
@@ -190,6 +225,10 @@ func (l *Lobby) advanceLobby() {
 	l.triggerPlayersUpdate()
 
 	l.startRound()
+	err := Store.SaveState(l.ID, l.State)
+	if err != nil {
+		fmt.Println("store SaveState error:", err)
+	}
 }
 
 func (l *Lobby) startRound() {
@@ -287,6 +326,11 @@ func (l *Lobby) endRound() {
 	}
 
 	WritePublicSystemMessage(l, roundOverMessage)
+
+	err := Store.SaveState(l.ID, l.State)
+	if err != nil {
+		fmt.Println("store SaveState error:", err)
+	}
 }
 
 func (l *Lobby) sendMessageToAll(message string, sender *Player) {
@@ -336,6 +380,13 @@ func (l *Lobby) kick(from *Player, toKickID string) {
 		return
 	}
 	from.votedForKick[toKickID] = true
+
+	defer func() {
+		err := Store.SaveState(l.ID, l.State)
+		if err != nil {
+			fmt.Println("store SaveState error:", err)
+		}
+	}()
 
 	var voteKickCount int
 	for _, p := range l.State.Players {
@@ -400,12 +451,5 @@ func (l *Lobby) kick(from *Player, toKickID string) {
 func (l *Lobby) clearDrawn() {
 	for _, p := range l.State.Players {
 		p.Drawn = false
-	}
-}
-
-func (l *Lobby) setAllGuessing() {
-	for _, p := range l.State.Players {
-		p.State = PlayerStateGuessing
-		p.votedForKick = make(map[string]bool)
 	}
 }

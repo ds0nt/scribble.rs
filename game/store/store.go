@@ -2,19 +2,11 @@ package store
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/go-redis/redis"
 	"github.com/scribble-rs/scribble.rs/game"
 )
-
-type Store interface {
-	SaveSettings(id string, l *game.LobbySettings) error
-	SaveState(id string, s *game.LobbyState) error
-	SaveDrawOp(id string, l ...game.LobbyDrawOp) error
-
-	Load(id string) (*game.Lobby, error)
-	Save(*game.Lobby) error
-}
 
 type RedisStore struct {
 	client *redis.Client
@@ -30,7 +22,7 @@ func NewRedisStore(options *redis.Options) *RedisStore {
 func (m *RedisStore) SaveSettings(id string, l *game.LobbySettings) error {
 	cmd := m.client.Set(id+".settings", l, 0)
 	text, err := cmd.Result()
-	fmt.Println("redis-store SaveSettings save:", text)
+	fmt.Println("redis-store SaveSettings result:", text)
 
 	return err
 }
@@ -38,19 +30,34 @@ func (m *RedisStore) SaveSettings(id string, l *game.LobbySettings) error {
 func (m *RedisStore) SaveState(id string, l *game.LobbyState) error {
 	cmd := m.client.Set(id+".state", l, 0)
 	text, err := cmd.Result()
-	fmt.Println("redis-store SaveState save:", text)
+	fmt.Println("redis-store SaveState result:", text)
 
 	return err
 }
 
-func (m *RedisStore) SaveDrawOp(id string, l ...game.LobbyDrawOp) error {
+func (m *RedisStore) SaveDrawOp(id string, l ...*game.Packet) error {
 	args := make([]interface{}, len(l))
 	for k, v := range l {
 		args[k] = v
 	}
 	cmd := m.client.RPush(id+".draw-ops", args...)
 	text, err := cmd.Result()
-	fmt.Println("redis-store LobbyDrawOp save:", text)
+	fmt.Println("redis-store LobbyDrawOp result:", text)
+
+	return err
+}
+func (m *RedisStore) UndoDrawOp(id string) error {
+	cmd := m.client.RPop(id + ".draw-ops")
+	text, err := cmd.Result()
+	fmt.Println("redis-store UndoDrawOp result:", text)
+
+	return err
+}
+func (m *RedisStore) ClearDrawing(id string) error {
+
+	cmd := m.client.Del(id + ".draw-ops")
+	text, err := cmd.Result()
+	fmt.Println("redis-store ClearDrawing result:", text)
 
 	return err
 }
@@ -77,7 +84,7 @@ func (m *RedisStore) Load(id string) (l *game.Lobby, err error) {
 	l = &game.Lobby{
 		ID: id,
 		CurrentDrawing: &game.LobbyDrawing{
-			CurrentDrawing: []game.LobbyDrawOp{},
+			CurrentDrawing: []*game.Packet{},
 		},
 		Settings: &game.LobbySettings{},
 		State:    &game.LobbyState{},
@@ -95,11 +102,17 @@ func (m *RedisStore) Load(id string) (l *game.Lobby, err error) {
 		return nil, err
 	}
 
-	cmd = m.client.GetRange(id+".draw-ops", 0, -1)
-	err = cmd.Scan(l.CurrentDrawing.CurrentDrawing)
+	for _, p := range l.State.Players {
+		p.SetWebsocketMutex(&sync.Mutex{})
+	}
+
+	cmd2 := m.client.LRange(id+".draw-ops", 0, -1)
+	err = cmd2.ScanSlice(&l.CurrentDrawing.CurrentDrawing)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("redis-store Loaded Lobby:", id)
 
 	return
 }

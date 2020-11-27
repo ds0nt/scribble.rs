@@ -3,6 +3,7 @@ package communication
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html"
 	"net/http"
 	"strings"
@@ -16,9 +17,10 @@ func getLobbyHandler(r *http.Request) (*game.Lobby, error) {
 		return nil, errors.New("the requested lobby doesn't exist")
 	}
 
-	lobby := game.GetLobby(lobbyID)
+	lobby, err := game.GetLoadLobby(lobbyID)
 
-	if lobby == nil {
+	if err != nil {
+		fmt.Println(err)
 		return nil, errors.New("the requested lobby doesn't exist")
 	}
 
