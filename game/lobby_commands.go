@@ -62,7 +62,7 @@ func (l *Lobby) Connect(player *Player) {
 	WriteAsJSON(player, Packet{Type: "ready", Data: readyBytes})
 
 	//This state is reached when the player refreshes before having chosen a word.
-	if l.State.Drawer == player.ID && l.State.CurrentWord == "" {
+	if l.State.Drawer == player.ID && len(l.State.WordChoice) > 0 {
 		l.sendWordChoice()
 	}
 	if l.State.Drawer != "" {
@@ -70,14 +70,11 @@ func (l *Lobby) Connect(player *Player) {
 		return
 	}
 
-	if l.State.Round == 0 {
-		l.State.Round = 1
-	}
 	l.State.Drawer = player.ID
 	player.State = PlayerStateDrawing
 
 	l.triggerPlayersUpdate()
-	l.startRound()
+
 	return
 }
 
@@ -170,6 +167,7 @@ func (l *Lobby) advanceLobby() {
 		if p.ID == l.State.Drawer {
 			p.Drawn = true
 			p.State = PlayerStateGuessing
+
 		}
 	}
 
@@ -190,7 +188,6 @@ func (l *Lobby) advanceLobby() {
 	l.State.Drawer = next.ID
 	next.State = PlayerStateDrawing
 	l.triggerPlayersUpdate()
-	l.sendWordChoice()
 
 	l.startRound()
 }
@@ -206,6 +203,7 @@ func (l *Lobby) startRound() {
 	l.State.RoundEndTime = time.Now().UTC().UnixNano()/1000000 + int64(l.Settings.DrawingTime)*1000
 	l.timeLeftTicker = time.NewTicker(1 * time.Second)
 	l.State.WordChoice = l.GetRandomWords()
+	l.sendWordChoice()
 
 	go func() {
 		hintsLeft := 2

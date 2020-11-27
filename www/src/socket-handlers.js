@@ -27,7 +27,7 @@ export function registerSocketHandlers() {
             elements.startDialog.style.display = "block";
         }
 
-        if (ready.players && ready.players.length) {
+        if (ready.players) {
             elements.applyPlayers(ready.players, gameState.state.ownID)
         }
         if (ready.currentDrawing && ready.currentDrawing.length) {

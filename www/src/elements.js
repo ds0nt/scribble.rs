@@ -61,7 +61,8 @@ export const selectTool = index => {
 export function applyPlayers(players, ownID) {
     
     playerContainer.innerHTML = "";
-    players.forEach(function (player) {
+    Object.keys(players).forEach(function (key) {
+        let player = players[key]
         if (!player.connected) {
             return;
         }

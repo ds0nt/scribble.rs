@@ -2,6 +2,8 @@ package game
 
 import (
 	"encoding/json"
+	"errors"
+
 	"fmt"
 	"log"
 	"strings"
@@ -20,14 +22,24 @@ type packetHandler = func(p *Packet, bytes []byte, from *Player) error
 // routes helper function
 func (l *Lobby) routes() map[string]packetHandler {
 	return map[string]packetHandler{
-		"message":             l.message,
-		"line":                l.canDrawMiddleware(l.line),
-		"fill":                l.canDrawMiddleware(l.fill),
-		"undo":                l.canDrawMiddleware(l.undo),
-		"clear-drawing-board": l.canDrawMiddleware(l.clearDrawingBoard),
-		"choose-word":         l.chooseWord,
-		"kick-vote":           l.kickVote,
 		"start":               l.start,
+		"message":             l.message,
+		"choose-word":         l.isStartedMiddleware(l.chooseWord),
+		"kick-vote":           l.isStartedMiddleware(l.kickVote),
+		"line":                l.isStartedMiddleware(l.canDrawMiddleware(l.line)),
+		"fill":                l.isStartedMiddleware(l.canDrawMiddleware(l.fill)),
+		"undo":                l.isStartedMiddleware(l.canDrawMiddleware(l.undo)),
+		"clear-drawing-board": l.isStartedMiddleware(l.canDrawMiddleware(l.clearDrawingBoard)),
+	}
+}
+
+// canDrawMiddleware accepts messages only from the current drawer
+func (l *Lobby) isStartedMiddleware(handler packetHandler) packetHandler {
+	return func(p *Packet, bytes []byte, from *Player) error {
+		if l.State.Round == 0 {
+			return errors.New("game not started")
+		}
+		return handler(p, bytes, from)
 	}
 }
 
@@ -35,7 +47,7 @@ func (l *Lobby) routes() map[string]packetHandler {
 func (l *Lobby) canDrawMiddleware(handler packetHandler) packetHandler {
 	return func(p *Packet, bytes []byte, from *Player) error {
 		if !l.canDraw(from) {
-			return nil
+			return errors.New("player cannot draw")
 		}
 		return handler(p, bytes, from)
 	}
@@ -180,8 +192,6 @@ func (l *Lobby) start(p *Packet, bytes []byte, from *Player) error {
 			otherPlayer.Score = 0
 			otherPlayer.LastScore = 0
 		}
-
-		l.State.Round = 1
 
 		l.advanceLobby()
 	}
