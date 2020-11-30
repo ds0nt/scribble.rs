@@ -25,8 +25,8 @@ func RemoveLobby(id string) {
 	}
 }
 
-func (l *Lobby) JoinPlayer(playerName string) string {
-	player := createPlayer(playerName)
+func (l *Lobby) JoinPlayer(playerName, session string) *Player {
+	player := createPlayer(playerName, session)
 
 	//FIXME Make a dedicated method that uses a mutex?
 
@@ -38,7 +38,7 @@ func (l *Lobby) JoinPlayer(playerName string) string {
 		fmt.Println("store save error:", err)
 	}
 
-	return player.userSession
+	return player
 }
 
 func (l *Lobby) Connect(player *Player) {
@@ -204,6 +204,7 @@ func (l *Lobby) advanceLobby() {
 			p.State = PlayerStateGuessing
 
 		}
+		fmt.Println(p.Name, "drawn:", p.Drawn, p.State)
 	}
 
 	next := l.nextDrawer()
@@ -232,6 +233,8 @@ func (l *Lobby) advanceLobby() {
 }
 
 func (l *Lobby) startRound() {
+
+	l.State.RoundEndTime = time.Now().UTC().UnixNano()/1000000 + int64(l.Settings.DrawingTime)*1000
 	TriggerComplexUpdateEvent("next-turn", &NextTurn{
 		Round:        l.State.Round,
 		Players:      l.State.Players,
@@ -239,8 +242,8 @@ func (l *Lobby) startRound() {
 	}, l)
 
 	//We use milliseconds for higher accuracy
-	l.State.RoundEndTime = time.Now().UTC().UnixNano()/1000000 + int64(l.Settings.DrawingTime)*1000
 	l.timeLeftTicker = time.NewTicker(1 * time.Second)
+
 	l.State.WordChoice = l.GetRandomWords()
 	l.sendWordChoice()
 
@@ -281,10 +284,10 @@ func (l *Lobby) startRound() {
 func (l *Lobby) endRound() {
 	l.State.Round++
 
-	if l.State.Round == l.Settings.Rounds {
+	if l.State.Round > l.Settings.Rounds {
 		// game over
 		l.State.Drawer = ""
-		l.State.Round = 0
+		l.State.Round = 1
 
 		WritePublicSystemMessage(l, "Game over. Type !start again to start a new round.")
 	}

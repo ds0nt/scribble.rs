@@ -27,7 +27,7 @@ func enterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if player == nil {
-		if len(lobby.State.Players) >= lobby.Settings.MaxPlayers {
+		if lobby.IsFull() {
 			http.Error(w, "lobby already full", http.StatusUnauthorized)
 			return
 		}
@@ -46,16 +46,24 @@ func enterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var playerName = getPlayernameHandler(r)
-		userSession := lobby.JoinPlayer(playerName)
+		var playerSession = userSession(r)
+		player = lobby.JoinPlayer(playerName, playerSession)
 
-		// Use the players generated usersession and pass it as a cookie.
-		http.SetCookie(w, &http.Cookie{
-			Name:     "usersession",
-			Value:    userSession,
-			Path:     "/",
-			SameSite: http.SameSiteStrictMode,
-		})
 	}
+
+	// Use the players generated usersession and pass it as a cookie.
+	http.SetCookie(w, &http.Cookie{
+		Name:     "X-UserSession",
+		Value:    player.GetSession(),
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "X-Username",
+		Value:    player.Name,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
 
 	encodingError := json.NewEncoder(w).Encode(lobbyData)
 	if encodingError != nil {
@@ -80,8 +88,12 @@ func createLobbyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var playerName = getPlayernameHandler(r)
-	player, lobby, createError := game.NewLobby(playerName, language, lobbyParams)
+	player, lobby, createError := game.NewLobby(
+		getPlayernameHandler(r),
+		userSession(r),
+		language,
+		lobbyParams,
+	)
 	if createError != nil {
 		http.Error(w, createError.Error(), http.StatusBadRequest)
 		return
@@ -89,12 +101,17 @@ func createLobbyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use the players generated usersession and pass it as a cookie.
 	http.SetCookie(w, &http.Cookie{
-		Name:     "usersession",
+		Name:     "X-UserSession",
 		Value:    player.GetSession(),
 		Path:     "/",
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	})
-
+	http.SetCookie(w, &http.Cookie{
+		Name:     "X-Username",
+		Value:    player.Name,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
 	_, encodingError := fmt.Fprint(w, lobby.ID)
 	if encodingError != nil {
 		http.Error(w, encodingError.Error(), http.StatusInternalServerError)

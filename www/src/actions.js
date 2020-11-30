@@ -9,9 +9,8 @@ export function startGameAction() {
     socket.sendStart()
     //Tas: not needed
     //startDialog.style.display = "hidden";
-    hide("#start-dialog");
-    show("#word-dialog");
-    elements.wordDialog.style.display = "block";
+    
+    elements.showDialog(startDialog)
 }
 
 
@@ -30,8 +29,8 @@ export function kickAction(playerId) {
 export function chooseWordAction(index) {
     socket.sendChooseWord(index)
 
-    hide("#word-dialog");
-    elements.wordDialog.style.display = "none";
+    elements.hideDialog()
+    
     $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
     $("#player-container").css({ 'transform': 'translateX(-150%)' });
 

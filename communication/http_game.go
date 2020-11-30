@@ -28,7 +28,7 @@ func getLobbyHandler(r *http.Request) (*game.Lobby, error) {
 }
 
 func userSession(r *http.Request) string {
-	sessionCookie, noCookieError := r.Cookie("usersession")
+	sessionCookie, noCookieError := r.Cookie("X-UserSession")
 	if noCookieError == nil && sessionCookie.Value != "" {
 		return sessionCookie.Value
 	}
@@ -46,7 +46,7 @@ func getPlayer(lobby *game.Lobby, r *http.Request) *game.Player {
 }
 
 func getPlayernameHandler(r *http.Request) string {
-	usernameCookie, noCookieError := r.Cookie("username")
+	usernameCookie, noCookieError := r.Cookie("X-Username")
 	if noCookieError == nil {
 		username := html.EscapeString(strings.TrimSpace(usernameCookie.Value))
 		if username != "" {
@@ -179,7 +179,7 @@ func ssrEnterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 	var templateError error
 
 	if player == nil {
-		if len(lobby.State.Players) >= lobby.Settings.MaxPlayers {
+		if lobby.IsFull() {
 			userFacingError(w, "Sorry, but the lobby is full.")
 			return
 		}
@@ -198,16 +198,24 @@ func ssrEnterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var playerName = getPlayernameHandler(r)
-		userSession := lobby.JoinPlayer(playerName)
+		var playerSession = userSession(r)
+		player = lobby.JoinPlayer(playerName, playerSession)
 
-		// Use the players generated usersession and pass it as a cookie.
-		http.SetCookie(w, &http.Cookie{
-			Name:     "usersession",
-			Value:    userSession,
-			Path:     "/",
-			SameSite: http.SameSiteStrictMode,
-		})
 	}
+
+	// Use the players generated usersession and pass it as a cookie.
+	http.SetCookie(w, &http.Cookie{
+		Name:     "X-UserSession",
+		Value:    player.GetSession(),
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "X-Username",
+		Value:    player.Name,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
 
 	templateError = lobbyPage.ExecuteTemplate(w, "lobby.html", pageData)
 	if templateError != nil {

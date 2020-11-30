@@ -82,6 +82,9 @@
                         <p>start game</p>
                     </div>
                 </div>
+                <div id="start-dialog-waiting" class="center-dialog-content">
+                    Waiting for host to start the game...
+                </div>
                 <div id="score-dialog" class="center-dialog-content">
                     <div class="score green">
                         <div class="score-box">
@@ -292,49 +295,6 @@
     window.addEventListener('load', function () {
         video.joinVideo();
     });
-    //switch to tool and playlist
-    //Tas: comment out
-    /*setTimeout(()=>{
-        $("#cc-toolbox").css({'transform':'translateX(0)'});
-        $("#player-container").css({'transform':'translateX(-150%)'});
-    },500);
-
-    setTimeout(()=>{
-        $("#cc-toolbox").css({'transform':'translateX(-150%)'});
-        $("#player-container").css({'transform':'translateX(0)'});
-    },3000);
-
-   // show start game
-    setTimeout(()=>{
-        show("#start-dialog")
-    },10);
-    setTimeout(()=>{
-        hide("#start-dialog")
-    },1000);
-    //show choose word dialog
-    setTimeout(()=>{
-        show("#word-dialog")
-    },2000);
-    setTimeout(()=>{
-        hide("#word-dialog")
-    },4000);
-    // show result
-    setTimeout(()=>{
-        show("#score-dialog");
-    },5000);
-    setTimeout(()=>{
-        hide("#score-dialog")
-    },6000);
-*/
-    //show and hide
-    function show(a) {
-        $(a).css("display", "block");
-        $("#center-dialog").css("display", "block");
-    };
-    function hide(a) {
-        $(a).css("display", "none");
-        $("#center-dialog").css("display", "none");
-    };
 </script>
 </body>
 

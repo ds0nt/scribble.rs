@@ -62,7 +62,7 @@ func (l *Lobby) HandlePacket(bytes []byte, from *Player) error {
 		return err
 	}
 
-	pretty.Println(p)
+	pretty.Println(p.Type, string(p.Data))
 
 	handler, ok := l.routes()[p.Type]
 	if !ok {
@@ -192,7 +192,7 @@ func (l *Lobby) start(p *Packet, bytes []byte, from *Player) error {
 			otherPlayer.Score = 0
 			otherPlayer.LastScore = 0
 		}
-
+		l.State.Round++
 		l.advanceLobby()
 	}
 

@@ -39,7 +39,7 @@ func (l *Lobby) handleMessage(input string, from *Player) {
 			WriteAsJSON(from, Packet{Type: "system-message", Data: []byte("You have correctly guessed the word.")})
 
 			if !l.isAnyoneStillGuessing() {
-				l.endRound()
+				l.advanceLobby()
 			} else {
 				bytes, err := json.Marshal(l.State.WordHintsShown)
 				if err != nil {

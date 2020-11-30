@@ -125,9 +125,12 @@ func ssrCreateLobbyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var playerName = getPlayernameHandler(r)
-
-	player, lobby, createError := game.NewLobby(playerName, language, lobbyParams)
+	player, lobby, createError := game.NewLobby(
+		getPlayernameHandler(r),
+		userSession(r),
+		language,
+		lobbyParams,
+	)
 	if createError != nil {
 		pageData.Errors = append(pageData.Errors, createError.Error())
 		templateError := lobbyCreatePage.ExecuteTemplate(w, "lobby_create.html", pageData)
@@ -140,10 +143,16 @@ func ssrCreateLobbyHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use the players generated usersession and pass it as a cookie.
 	http.SetCookie(w, &http.Cookie{
-		Name:     "usersession",
+		Name:     "X-UserSession",
 		Value:    player.GetSession(),
 		Path:     "/",
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "X-Username",
+		Value:    player.Name,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	http.Redirect(w, r, "/ssrEnterLobby?lobby_id="+lobby.ID, http.StatusFound)

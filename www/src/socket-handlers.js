@@ -20,11 +20,15 @@ export function registerSocketHandlers() {
             maxRounds: ready.maxRounds,
             roundEndTime: ready.roundEndTime,
         })
+
         elements.applyRounds(ready.round, ready.maxRounds);
 
-        if (ready.round === 0 && ready.ownerId === ready.playerId) {
-            show("#start-dialog")
-            elements.startDialog.style.display = "block";
+        if (ready.round === 0) {
+            if (ready.ownerId === ready.playerId) {
+                elements.showDialog(elements.startDialog)                
+            } else {
+                elements.showDialog(elements.startDialogWaiting)               
+            }
         }
 
         if (ready.players) {
@@ -56,12 +60,12 @@ export function registerSocketHandlers() {
     socket.addHandler("non-guessing-player-message", (pkt) => {
         elements.applyMessage("non-guessing-player-message", pkt.data.author, pkt.data.content);
     })
-    socket.addHandler("persist-username", (pkt) => {
-        document.cookie = "username=" + pkt.data + ";expires=Tue, 19 Jan 2038 00:00:00 UTC;path=/;samesite=strict";
-    })
-    socket.addHandler("reset-username", (pkt) => {
-        document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    })
+    // socket.addHandler("persist-username", (pkt) => {
+    //     document.cookie = "username=" + pkt.data + ";expires=Tue, 19 Jan 2038 00:00:00 UTC;path=/;samesite=strict";
+    // })
+    // socket.addHandler("reset-username", (pkt) => {
+    //     document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    // })
     socket.addHandler("line", (pkt) => {
         gameState.addPkt(pkt)
 
@@ -93,10 +97,21 @@ export function registerSocketHandlers() {
 
 
     socket.addHandler("next-turn", (pkt) => {
+        elements.hideDialog()
+        if (pkt.data.round === 0) {
+            elements.showDialog(elements.startDialog)
+            if (gameState.state.ownID === gameState.state.ownerID) {
+                elements.showDialog(elements.startDialog)                
+            } else {
+                elements.showDialog(elements.startDialogWaiting)               
+            }
+        }
+
+
         $("#cc-toolbox").css({ 'transform': 'translateX(-150%)' });
         $("#player-container").css({ 'transform': 'translateX(0)' });
         //If a player doesn't choose, the dialog will still be up.
-        elements.wordDialog.style.display = "none";
+
         audio.endTurn()
 
         canvas.clear();
@@ -119,8 +134,9 @@ export function registerSocketHandlers() {
         elements.wordButtonZero.textContent = pkt.data[0];
         elements.wordButtonOne.textContent = pkt.data[1];
         elements.wordButtonTwo.textContent = pkt.data[2];
-        elements.wordDialog.style.display = "block";
-        show("#word-dialog")
+        if (pkt.data.round !== 0) {
+            elements.showDialog(elements.wordDialog)
+        }
         $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
         $("#player-container").css({ 'transform': 'translateX(-150%)' });
     })

@@ -1,11 +1,26 @@
 
+
+// function clientID() {
+//     let clientId = localStorage.getItem("clientid")
+//     if (!clientId) {
+//         const chars = "abcdefghijklmnopqrstuvwxyz1234567890"
+//         clientId = "" 
+//         for (let x = 0; x < 30; x++) {
+//             clientId += chars[Math.floor(Math.random()*chars.length)]
+//         }
+//         localStorage.setItem("clientid", clientId)
+//     }
+//     return clientId
+// }
+//         // document.cookie = `X-UserSession=${clientID()};`
+
 class Socket {
     handlers = {}
     constructor() {
         // let wsURL(location.protocol === 'https:' ? "wss://" : "ws://") + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId
         let wsURL = "ws://" + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId
 
-        this.socket = new ReconnectingWebSocket(wsURL, null, { debug: true, reconnectInterval: 3000, automaticOpen: false });
+        this.socket = new ReconnectingWebSocket(wsURL, null, { debug: false, reconnectInterval: 3000, automaticOpen: true });
         this.socket.onmessage = e => {
             let parsed = JSON.parse(e.data);
             if (typeof this.handlers[parsed.type] == 'undefined') {

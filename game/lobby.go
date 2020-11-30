@@ -60,6 +60,7 @@ type LobbyState struct {
 	Drawer       string // Drawer references the Player that is currently drawing.
 	Round        int    // Round  between 0 and MaxRounds. 0 indicates that it hasn't started yet.
 	RoundEndTime int64  // RoundEndTime unix timestamp
+
 	// CurrentWord represents the word that was last selected. If no word has
 	// been selected yet or the round is already over, this should be empty.
 	CurrentWord    string
@@ -134,7 +135,7 @@ type Rounds struct {
 
 // NewLobby allows creating a lobby, optionally returning errors that
 // occured during creation.
-func NewLobby(ownerName, language string, settings LobbySettings) (*Player, *Lobby, error) {
+func NewLobby(ownerName, session, language string, settings LobbySettings) (*Player, *Lobby, error) {
 
 	lobby := &Lobby{
 		ID: uuid.NewV4().String(),
@@ -158,7 +159,7 @@ func NewLobby(ownerName, language string, settings LobbySettings) (*Player, *Lob
 	lobbies = append(lobbies, lobby)
 	lobbiesMu.Unlock()
 
-	player := createPlayer(ownerName)
+	player := createPlayer(ownerName, session)
 
 	lobby.State.Players[player.ID] = player
 	lobby.State.Owner = player.ID

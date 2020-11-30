@@ -194,11 +194,16 @@ body {
 #start-dialog{
     display: none;
 }
+#start-dialog-waiting {
+    display: none;
+    color:  white;    
+}
 .word-button-container {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
+
 
 .dialog-word-button {
     background: #E37263 0% 0% no-repeat padding-box;

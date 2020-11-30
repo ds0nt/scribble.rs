@@ -104,6 +104,9 @@ func (m *RedisStore) Load(id string) (l *game.Lobby, err error) {
 
 	for _, p := range l.State.Players {
 		p.SetWebsocketMutex(&sync.Mutex{})
+		p.Connected = false
+
+		fmt.Println("Loaded Player", p.Name, p.ID)
 	}
 
 	cmd2 := m.client.LRange(id+".draw-ops", 0, -1)

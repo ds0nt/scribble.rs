@@ -49,9 +49,12 @@ type Player struct {
 	State     PlayerState `json:"state"`
 }
 
-func createPlayer(name string) *Player {
+func createPlayer(name, session string) *Player {
+	if session == "" {
+		session = uuid.NewV4().String()
+	}
 	return &Player{
-		userSession:  uuid.NewV4().String(),
+		userSession:  session,
 		wsMu:         &sync.Mutex{},
 		votedForKick: make(map[string]bool),
 		ID:           uuid.NewV4().String(),

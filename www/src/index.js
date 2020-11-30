@@ -9,7 +9,6 @@ import { registerCircles, registerTools } from './components/tools';
 import { registerOverlay } from './components/overlay';
 import { registerSocketHandlers } from './socket-handlers'
 
-
 window.setInterval(function () {
     let secondsLeft = Math.floor((gameState.state.roundEndTime - (new Date().getTime())) / 1000);
     if (secondsLeft >= 0) {
@@ -25,5 +24,8 @@ registerOverlay()
 registerCircles()
 registerTools()
 registerMessages()
+
+elements.startDialog.style.display = "none"
+elements.startDialogWaiting.style.display = "none"
 
 socket.open()

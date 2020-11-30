@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
+	"github.com/kr/pretty"
 
 	"github.com/scribble-rs/scribble.rs/game"
 )
@@ -40,23 +41,30 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	if lobby.IsFull() {
+		http.Error(w, "Lobby is full", http.StatusNotFound)
+		return
+	}
 
 	//This issue can happen if you illegally request a websocket connection without ever having had
 	//a usersession or your client having deleted the usersession cookie.
 	sessionCookie := userSession(r)
 	if sessionCookie == "" {
+		log.Println("session not found")
 		http.Error(w, "you don't have access to this lobby;usersession not set", http.StatusUnauthorized)
 		return
 	}
 
 	player := lobby.GetPlayerBySession(sessionCookie)
 	if player == nil {
+		log.Println("player for session not found", sessionCookie)
 		http.Error(w, "you don't have access to this lobby;usersession invalid", http.StatusUnauthorized)
 		return
 	}
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -83,6 +91,8 @@ func wsListen(l *game.Lobby, player *game.Player, socket *websocket.Conn) {
 			log.Println("Error occurred in wsListen: ", err)
 		}
 	}()
+
+	defer socket.Close()
 
 	for {
 		_, bytes, err := socket.ReadMessage()
@@ -156,6 +166,19 @@ func WriteAsJSON(player *game.Player, object interface{}) error {
 	socket := player.GetWebsocket()
 	if socket == nil || !player.Connected {
 		return errors.New("player not connected")
+	}
+
+	p, ok := object.(*jsEvent)
+	if ok {
+		fmt.Printf("sending packet type: %s to %s\n", p.Type, player.Name)
+	} else {
+		pc, ok := object.(*game.Packet)
+		if ok {
+			fmt.Printf("sending packet type: %s to %s\n", pc.Type, player.Name)
+		} else {
+
+			pretty.Println("sending", player.Name, object)
+		}
 	}
 
 	return socket.WriteJSON(object)

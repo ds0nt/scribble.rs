@@ -7,12 +7,15 @@ export const timeLeft = document.getElementById("time-left");
 export const drawingBoard = document.getElementById("drawing-board");
 
 export const startDialog = document.getElementById("start-dialog");
+export const startDialogWaiting = document.getElementById("start-dialog-waiting");
+
 export const startGameButton = document.getElementById('start-game-button')
 
 export const wordDialog = document.getElementById("word-dialog");
 export const wordButtonZero = document.getElementById("word-button-zero");
 export const wordButtonOne = document.getElementById("word-button-one");
 export const wordButtonTwo = document.getElementById("word-button-two");
+export const scoreDialog = document.getElementById("score-dialog");
 
 
 export const scaleUpFactor = () => window.baseWidth / drawingBoard.clientWidth;
@@ -51,13 +54,21 @@ export const selectTool = index => {
     fillTool.className = index == FILL_BUCKET ? 'fill active' : 'fill'
 }
 
+export function showDialog(dialog) {
+    centerDialog.style.display = "block"
+    startDialog.style.display = "none"
+    wordDialog.style.display = "none"
+    scoreDialog.style.display = "none"
+    
+    dialog.style.display = "block"
+}
 
-
-// <div class="playerBox">
-//         <img src="../resources/image/avatar_phillip.png" alt="">
-//         <div class="playerName self">james</div>
-//         <div class="playerScore">0</div>
-//     </div> 
+export const hideDialog = () => {
+    centerDialog.style.display = "none"
+    startDialog.style.display = "none"
+    wordDialog.style.display = "none"
+    scoreDialog.style.display = "none"
+}
 export function applyPlayers(players, ownID) {
     
     playerContainer.innerHTML = "";
@@ -124,16 +135,5 @@ export function applyWordHints(wordHints) {
 }
 
 export function applyMessage(styleClass, author, message) {
-    if (message === "Game over. Type !start again to start a new round.") {
-        show("#score-dialog");
-        return;
-    }
-    if (messageContainer.childElementCount >= 100) {
-        messageContainer.removeChild(messageContainer.firstChild)
-    }
-
-    messageContainer.innerHTML += `<div class="message ` + styleClass + `">
-                            <span class="chat-name">` + author + `</span>
-                            <span class="message-content">` + message + `</span>
-                        </div>`;
+    console.log("message", author, message)
 }

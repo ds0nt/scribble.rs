@@ -94,3 +94,18 @@ func (l *Lobby) isAnyoneStillGuessing() bool {
 
 	return false
 }
+
+func (l *Lobby) IsFull() bool {
+	numNeeded := l.Settings.MaxPlayers
+
+	for _, p := range l.State.Players {
+		if p.Connected {
+			numNeeded--
+			if numNeeded == 0 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
