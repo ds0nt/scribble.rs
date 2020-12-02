@@ -1,34 +1,42 @@
-package game
+package game_test
 
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/go-redis/redis"
+	"github.com/scribble-rs/scribble.rs/game"
+	"github.com/scribble-rs/scribble.rs/game/store"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGame(t *testing.T) {
-	TriggerSimpleUpdateEvent = func(eventType string, lobby *Lobby) {
+	game.Store = store.NewRedisStore(&redis.Options{
+		Addr: "127.0.01:6379",
+	})
+
+	game.TriggerSimpleUpdateEvent = func(eventType string, lobby *game.Lobby) {
 		fmt.Println("TriggerSimpleUpdateEvent", eventType)
 	}
-	TriggerComplexUpdatePerPlayerEvent = func(eventType string, data func(*Player) interface{}, lobby *Lobby) {
+	game.TriggerComplexUpdatePerPlayerEvent = func(eventType string, data func(*game.Player) interface{}, lobby *game.Lobby) {
 		fmt.Println("TriggerComplexUpdatePerPlayerEvent", eventType)
 	}
-	TriggerComplexUpdateEvent = func(eventType string, data interface{}, lobby *Lobby) {
+	game.TriggerComplexUpdateEvent = func(eventType string, data interface{}, lobby *game.Lobby) {
 		fmt.Println("TriggerComplexUpdateEvent", eventType)
 	}
-	SendDataToOtherPlayers = func(sender *Player, lobby *Lobby, data interface{}) {
+	game.SendDataToOtherPlayers = func(sender *game.Player, lobby *game.Lobby, data interface{}) {
 		fmt.Println("SendDataToOtherPlayers")
 	}
-	WriteAsJSON = func(player *Player, object interface{}) error {
+	game.WriteAsJSON = func(player *game.Player, object interface{}) error {
 		fmt.Println("WriteAsJSON")
 		return nil
 	}
-	WritePublicSystemMessage = func(lobby *Lobby, text string) {
+	game.WritePublicSystemMessage = func(lobby *game.Lobby, text string) {
 		fmt.Println("WritePublicSystemMessage")
 	}
 
-	bro, lobby, err := NewLobby("test-bro", "test-bro-session", "english", LobbySettings{
+	bro, lobby, err := game.NewLobby("test-bro", "test-bro-session", "english", game.LobbySettings{
 		ClientsPerIPLimit: 5,
 		CustomWords:       []string{},
 		CustomWordsChance: 100,
@@ -60,7 +68,7 @@ func TestGame(t *testing.T) {
 	// connect player
 	lobby.Connect(bro)
 
-	require.Equal(t, bro.State, PlayerStateDrawing)
+	require.Equal(t, bro.State, game.PlayerStateDrawing)
 	require.Equal(t, lobby.State.Round, 0)
 	require.False(t, lobby.State.RoundEndTime > 0)
 	require.Equal(t, lobby.State.Drawer, bro.ID)
@@ -78,7 +86,7 @@ func TestGame(t *testing.T) {
 	err = lobby.HandlePacket([]byte(`{"type":"start"}`), bro)
 	require.Nil(t, err)
 
-	require.Equal(t, bro.State, PlayerStateDrawing)
+	require.Equal(t, bro.State, game.PlayerStateDrawing)
 	require.Equal(t, lobby.State.Round, 1)
 	require.True(t, lobby.State.RoundEndTime > 0)
 	require.Equal(t, lobby.State.Drawer, bro.ID)
@@ -91,7 +99,7 @@ func TestGame(t *testing.T) {
 	err = lobby.HandlePacket([]byte(`{"type":"choose-word", "data":0}`), bro)
 	require.Nil(t, err)
 
-	require.Equal(t, bro.State, PlayerStateDrawing)
+	require.Equal(t, bro.State, game.PlayerStateDrawing)
 	require.Equal(t, lobby.State.Round, 1)
 	require.True(t, lobby.State.RoundEndTime > 0)
 	require.Equal(t, lobby.State.Drawer, bro.ID)
@@ -104,36 +112,53 @@ func TestGame(t *testing.T) {
 
 	bro2Session := lobby.JoinPlayer("test-bro2", "test-bro2-session")
 	require.Len(t, lobby.State.Players, 2)
-	bro2 := lobby.GetPlayerBySession(bro2Session)
-	require.Equal(t, bro2.State, PlayerStateGuessing)
+	bro2 := lobby.GetPlayerBySession(bro2Session.UserSession)
+	require.Equal(t, bro2.State, game.PlayerStateGuessing)
 	require.Equal(t, bro2.Drawn, false)
 	lobby.Connect(bro2)
 
 	sisSession := lobby.JoinPlayer("test-sis", "test-sis-session")
 	require.Len(t, lobby.State.Players, 3)
-	sis := lobby.GetPlayerBySession(sisSession)
-	require.Equal(t, sis.State, PlayerStateGuessing)
+	sis := lobby.GetPlayerBySession(sisSession.UserSession)
+	require.Equal(t, sis.State, game.PlayerStateGuessing)
 	require.Equal(t, sis.Drawn, false)
 	lobby.Connect(sis)
 
 	sis2Session := lobby.JoinPlayer("test-sis2", "test-sis2-session")
 	require.Len(t, lobby.State.Players, 4)
-	sis2 := lobby.GetPlayerBySession(sis2Session)
-	require.Equal(t, sis2.State, PlayerStateGuessing)
+	sis2 := lobby.GetPlayerBySession(sis2Session.UserSession)
+	require.Equal(t, sis2.State, game.PlayerStateGuessing)
 	require.Equal(t, sis2.Drawn, false)
 	lobby.Connect(sis2)
 
-	lobby.advanceLobby() // 3 players left
-	require.Equal(t, lobby.State.Round, 1)
-	require.Equal(t, bro.State, PlayerStateGuessing)
-	require.Equal(t, bro.Drawn, true)
-
-	lobby.advanceLobby() // 2 players left
 	require.Equal(t, lobby.State.Round, 1)
 
-	lobby.advanceLobby() // last player
+	lobby.HandlePacket([]byte(`{"type":"message", "data": "`+lobby.State.CurrentWord+`"}`), sis)
+	lobby.HandlePacket([]byte(`{"type":"message", "data": "`+lobby.State.CurrentWord+`"}`), sis2)
+	lobby.HandlePacket([]byte(`{"type":"message", "data": "`+lobby.State.CurrentWord+`"}`), bro2)
+
+	time.Sleep(time.Millisecond * 10)
+
 	require.Equal(t, lobby.State.Round, 1)
 
-	lobby.advanceLobby() // next round
-	require.Equal(t, lobby.State.Round, 2)
+	for i := 2; i < 5; i++ {
+		drawer := lobby.GetPlayerById(lobby.State.Drawer)
+
+		// choose word before game started
+		err = lobby.HandlePacket([]byte(`{"type":"choose-word", "data":0}`), drawer)
+		require.NotNil(t, err)
+
+		// insert bullshit drawing data here.
+		require.NotNil(t, err)
+		for _, p := range lobby.State.Players {
+			if p == drawer {
+				continue
+			}
+
+			lobby.HandlePacket([]byte(`{"type":"message", "data": "`+lobby.State.CurrentWord+`"}`), bro2)
+		}
+		require.Equal(t, lobby.State.Round, i)
+
+	}
+
 }

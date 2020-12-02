@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
-	"github.com/kr/pretty"
 
 	"github.com/scribble-rs/scribble.rs/game"
 )
@@ -177,7 +176,6 @@ func WriteAsJSON(player *game.Player, object interface{}) error {
 			fmt.Printf("sending packet type: %s to %s\n", pc.Type, player.Name)
 		} else {
 
-			pretty.Println("sending", player.Name, object)
 		}
 	}
 

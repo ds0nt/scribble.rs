@@ -56,9 +56,25 @@ func TestSaveLobby(t *testing.T) {
 		err := st.Save(l)
 		require.Nil(t, err)
 
-		lobby, err := st.Load(l.ID)
+		_l, err := st.Load(l.ID)
 		require.Nil(t, err)
 
-		requireLobbiesEqual(t, l, lobby)
+		requireLobbiesEqual(t, l, _l)
+
+		l.State.Players["asdf"] = &game.Player{
+			ID: "asdf",
+		}
+
+		require.Nil(t, st.SaveState(l.ID, l.State))
+		require.Nil(t, st.SaveSettings(l.ID, l.Settings))
+		require.Nil(t, st.SaveDrawOp(l.ID, &game.Packet{Type: "a"}))
+		require.Nil(t, st.SaveDrawOp(l.ID, &game.Packet{Type: "b"}))
+		require.Nil(t, st.SaveDrawOp(l.ID, &game.Packet{Type: "C"}))
+
+		_l, err = st.Load(l.ID)
+		require.Nil(t, err)
+		require.Len(t, _l.State.Players, 1)
+		require.Len(t, _l.CurrentDrawing.CurrentDrawing, 3)
+
 	}
 }

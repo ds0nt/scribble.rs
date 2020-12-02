@@ -10,7 +10,7 @@ import { registerOverlay } from './components/overlay';
 import { registerSocketHandlers } from './socket-handlers'
 
 window.setInterval(function () {
-    let secondsLeft = Math.floor((gameState.state.roundEndTime - (new Date().getTime())) / 1000);
+    let secondsLeft = Math.floor((gameState.state.roundEndTime - (new Date().getTime() / 1000)));
     if (secondsLeft >= 0) {
         elements.timeLeft.innerText = secondsLeft;
     } else {

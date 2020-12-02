@@ -2,7 +2,6 @@ package game
 
 import (
 	"math/rand"
-	"time"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/vmihailenco/msgpack"
@@ -20,10 +19,9 @@ type Lobby struct {
 
 	// calculated on init
 	words                 []string
-	timeLeftTicker        *time.Ticker
-	timeLeftTickerReset   chan struct{}
 	scoreEarnedByGuessers int
 	alreadyUsedWords      []string
+	turnDone              chan struct{}
 }
 
 func (m *Lobby) MarshalBinary() ([]byte, error) {
@@ -119,6 +117,7 @@ type Line struct {
 	ToY       float64 `json:"toY"`
 	Color     string  `json:"color"`
 	LineWidth float64 `json:"lineWidth"`
+	GestureID int     `json:"gestureId"`
 }
 
 // Fill represents the usage of the fill bucket.
@@ -145,8 +144,7 @@ func NewLobby(ownerName, session, language string, settings LobbySettings) (*Pla
 			Players: map[string]*Player{},
 		},
 		CurrentDrawing: &LobbyDrawing{CurrentDrawing: []*Packet{}},
-
-		timeLeftTickerReset: make(chan struct{}),
+		turnDone:       make(chan struct{}),
 	}
 
 	if len(settings.CustomWords) > 1 {

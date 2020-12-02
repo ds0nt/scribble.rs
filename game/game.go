@@ -8,7 +8,6 @@ type LobbyStore interface {
 	SaveSettings(id string, l *LobbySettings) error
 	SaveState(id string, s *LobbyState) error
 	SaveDrawOp(id string, l ...*Packet) error
-	UndoDrawOp(id string) error
 	ClearDrawing(id string) error
 	Load(id string) (*Lobby, error)
 	Save(*Lobby) error

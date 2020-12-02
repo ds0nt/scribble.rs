@@ -67,6 +67,9 @@ export function registerSocketHandlers() {
     //     document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     // })
     socket.addHandler("line", (pkt) => {
+        if (pkt.data.gestureId > gameState.state.gestureId) {
+            gameState.setState({ gestureId: pkt.data.gestureId })
+        }
         gameState.addPkt(pkt)
 
         canvas.drawLine(
@@ -131,11 +134,13 @@ export function registerSocketHandlers() {
     socket.addHandler("your-turn", (pkt) => {
         resetTools()
         audio.yourTurn()
-        elements.wordButtonZero.textContent = pkt.data[0];
-        elements.wordButtonOne.textContent = pkt.data[1];
-        elements.wordButtonTwo.textContent = pkt.data[2];
-        if (pkt.data.round !== 0) {
-            elements.showDialog(elements.wordDialog)
+        if (!!pkt.data) {
+            elements.wordButtonZero.textContent = pkt.data[0];
+            elements.wordButtonOne.textContent = pkt.data[1];
+            elements.wordButtonTwo.textContent = pkt.data[2];
+            if (pkt.data.round !== 0) {
+                elements.showDialog(elements.wordDialog)
+            }
         }
         $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
         $("#player-container").css({ 'transform': 'translateX(-150%)' });

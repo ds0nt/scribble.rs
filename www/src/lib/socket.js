@@ -84,7 +84,7 @@ class Socket {
         }));
     }
 
-    sendLine(x1, y1, x2, y2, color, lineWidth) {
+    sendLine(x1, y1, x2, y2, color, lineWidth, gestureId) {
         let drawInstruction = {
             type: "line",
             data: {
@@ -94,6 +94,7 @@ class Socket {
                 toY: y2,
                 color: color,
                 lineWidth: lineWidth,
+                gestureId: gestureId,
             }
         }
         this.socket.send(JSON.stringify(drawInstruction));

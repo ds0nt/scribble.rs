@@ -1,5 +1,7 @@
 package game
 
+import "fmt"
+
 // GetLobby returns a Lobby that has a matching ID or no Lobby if none could
 // be found.
 func GetLobby(id string) *Lobby {
@@ -27,6 +29,10 @@ func GetLoadLobby(id string) (*Lobby, error) {
 	lobbies = append(lobbies, lobby)
 	lobbiesMu.Unlock()
 
+	for _, p := range lobby.State.Players {
+		fmt.Println("Loaded Player", p.Name, p.ID)
+	}
+
 	return lobby, nil
 }
 
@@ -51,7 +57,7 @@ func (l *Lobby) nextDrawer() *Player {
 // GetPlayerBySession searches for a player, identifying them by usersession.
 func (l *Lobby) GetPlayerBySession(userSession string) *Player {
 	for _, player := range l.State.Players {
-		if player.userSession == userSession {
+		if player.UserSession == userSession {
 			return player
 		}
 	}
@@ -86,8 +92,8 @@ func (l *Lobby) canDraw(player *Player) bool {
 }
 
 func (l *Lobby) isAnyoneStillGuessing() bool {
-	for _, otherPlayer := range l.State.Players {
-		if otherPlayer.State == PlayerStateGuessing && otherPlayer.Connected {
+	for _, p := range l.State.Players {
+		if p.State == PlayerStateGuessing && p.Connected {
 			return true
 		}
 	}

@@ -91,7 +91,7 @@ export function drawAction(x1, y1, x2, y2) {
     let _lineWidth = localLineWidth * elements.scaleUpFactor()
     
     gameState.addLine(_x1, _y1, _x2, _y2, _color, _lineWidth)
-    socket.sendLine(_x1, _y1, _x2, _y2, _color, _lineWidth)
+    socket.sendLine(_x1, _y1, _x2, _y2, _color, _lineWidth, gameState.state.gestureId)
 }
 
 export function clearAction() {

@@ -117,7 +117,7 @@ func (l *Lobby) fill(p *Packet, bytes []byte, from *Player) error {
 }
 func (l *Lobby) undo(p *Packet, bytes []byte, from *Player) error {
 
-	l.Undo()
+	l.AppendUndo(p)
 	SendDataToOtherPlayers(from, l, p)
 	return nil
 
@@ -192,7 +192,7 @@ func (l *Lobby) start(p *Packet, bytes []byte, from *Player) error {
 			otherPlayer.Score = 0
 			otherPlayer.LastScore = 0
 		}
-		l.State.Round++
+		l.State.Round = 1
 		l.advanceLobby()
 	}
 

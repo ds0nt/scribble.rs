@@ -89,6 +89,8 @@ let cursorY = 0;
 let touchID = 0;
 
 drawingBoard.ontouchstart = function (e) {
+    gameState.incLineGesture()
+
     const { allowDrawing, localTool } = gameState.state
 
     if (!cursorDrawing && allowDrawing) {
@@ -133,7 +135,6 @@ drawingBoard.ontouchmove = function (e) {
 };
 
 drawingBoard.ontouchcancel = function (e) {
-    gameState.incLineGesture()
     if (cursorDrawing) {
         // find touch with correct ID
         for (let i = e.changedTouches.length - 1; i >= 0; i--) {
@@ -148,6 +149,8 @@ drawingBoard.ontouchend = drawingBoard.ontouchcancel
 
 // Mouse input
 drawingBoard.onmousedown = function (e) {
+    gameState.incLineGesture()
+
     const { allowDrawing, localTool } = gameState.state
 
     if (allowDrawing && e.button === 0 && localTool !== 2) {
@@ -164,7 +167,6 @@ drawingBoard.onmousedown = function (e) {
 window.onmouseup = function (e) {
     if (cursorDrawing === true) {
         cursorDrawing = false;
-        gameState.incLineGesture()
     }
 };
 

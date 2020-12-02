@@ -36,23 +36,17 @@ func (m *RedisStore) SaveState(id string, l *game.LobbyState) error {
 }
 
 func (m *RedisStore) SaveDrawOp(id string, l ...*game.Packet) error {
-	args := make([]interface{}, len(l))
-	for k, v := range l {
-		args[k] = v
+	for _, v := range l {
+		cmd := m.client.RPush(id+".draw-ops", v)
+		text, err := cmd.Result()
+		if err != nil {
+			return err
+		}
+		fmt.Println("redis-store LobbyDrawOp result:", text)
 	}
-	cmd := m.client.RPush(id+".draw-ops", args...)
-	text, err := cmd.Result()
-	fmt.Println("redis-store LobbyDrawOp result:", text)
-
-	return err
+	return nil
 }
-func (m *RedisStore) UndoDrawOp(id string) error {
-	cmd := m.client.RPop(id + ".draw-ops")
-	text, err := cmd.Result()
-	fmt.Println("redis-store UndoDrawOp result:", text)
 
-	return err
-}
 func (m *RedisStore) ClearDrawing(id string) error {
 
 	cmd := m.client.Del(id + ".draw-ops")
@@ -106,7 +100,7 @@ func (m *RedisStore) Load(id string) (l *game.Lobby, err error) {
 		p.SetWebsocketMutex(&sync.Mutex{})
 		p.Connected = false
 
-		fmt.Println("Loaded Player", p.Name, p.ID)
+		fmt.Println("Loaded Player {name, id, session}:", p.Name, p.ID, p.GetSession())
 	}
 
 	cmd2 := m.client.LRange(id+".draw-ops", 0, -1)

@@ -66,8 +66,12 @@ func (l *Lobby) Connect(player *Player) {
 
 	WriteAsJSON(player, Packet{Type: "ready", Data: readyBytes})
 
+	if l.State.Drawer == player.ID {
+
+	}
+
 	//This state is reached when the player refreshes before having chosen a word.
-	if l.State.Drawer == player.ID && len(l.State.WordChoice) > 0 {
+	if l.State.Drawer == player.ID {
 		l.sendWordChoice()
 	}
 	if l.State.Drawer != "" {
@@ -131,14 +135,6 @@ func (l *Lobby) sendWordChoice() {
 	WriteAsJSON(player, &Packet{Type: "your-turn", Data: choiceBytes})
 }
 
-// LineEvent is basically the same as LobbyEvent, but with a specific Data type.
-// We use this for reparsing as soon as we know that the type is right. It's
-// a bit unperformant, but will do for now.
-type LineEvent struct {
-	Type string `json:"type"`
-	Data *Line  `json:"data"`
-}
-
 // AppendLine adds a line direction to the current drawing. This exists in order
 // to prevent adding arbitrary elements to the drawing, as the backing array is
 // an empty interface type.
@@ -149,20 +145,6 @@ func (l *Lobby) AppendLine(line *Packet) {
 	if err != nil {
 		fmt.Println("store SaveDrawOp error:", err)
 	}
-}
-
-// LineEvent is basically the same as LobbyEvent, but with a specific Data type.
-// We use this for reparsing as soon as we know that the type is right. It's
-// a bit unperformant, but will do for now.
-type FillEvent struct {
-	Type string `json:"type"`
-	Data *Fill  `json:"data"`
-}
-
-// UndoEvent
-type UndoEvent struct {
-	Type string `json:"type"`
-	Data *Fill  `json:"data"`
 }
 
 // AppendFill adds a fill direction to the current drawing. This exists in order
@@ -177,10 +159,10 @@ func (l *Lobby) AppendFill(fill *Packet) {
 	}
 }
 
-func (l *Lobby) Undo() {
+func (l *Lobby) AppendUndo(undo *Packet) {
 	l.CurrentDrawing.CurrentDrawing = l.CurrentDrawing.CurrentDrawing[:len(l.CurrentDrawing.CurrentDrawing)-1]
 
-	err := Store.UndoDrawOp(l.ID)
+	err := Store.SaveDrawOp(l.ID, undo)
 	if err != nil {
 		fmt.Println("store SaveDrawOp error:", err)
 	}
@@ -198,111 +180,104 @@ type NextTurn struct {
 func (l *Lobby) advanceLobby() {
 	l.ClearDrawing()
 
-	for _, p := range l.State.Players {
-		if p.ID == l.State.Drawer {
-			p.Drawn = true
-			p.State = PlayerStateGuessing
+	if l.turnDone != nil {
+		// in case of a database loaded lobby the turnDone channel may be nil  on round 1
+		l.endTurn()
+	}
 
-		}
-		fmt.Println(p.Name, "drawn:", p.Drawn, p.State)
+	l.turnDone = make(chan struct{})
+
+	p := l.GetPlayerById(l.State.Drawer)
+	if p != nil {
+		p.Drawn = true
+		p.State = PlayerStateGuessing
 	}
 
 	next := l.nextDrawer()
-	//If everyone has drawn once (e.g. a round has passed)
 	if next == nil {
-		// next round
-		l.clearDrawn()
 		l.endRound()
-
 		next = l.nextDrawer()
-	}
-
-	if next == nil {
-		return
+		if next == nil {
+			fmt.Println("No next player left.")
+			return
+		}
 	}
 
 	l.State.Drawer = next.ID
 	next.State = PlayerStateDrawing
 	l.triggerPlayersUpdate()
 
-	l.startRound()
-	err := Store.SaveState(l.ID, l.State)
-	if err != nil {
-		fmt.Println("store SaveState error:", err)
-	}
-}
+	turnTime := time.Second * time.Duration(l.Settings.DrawingTime)
+	l.State.RoundEndTime = time.Now().Add(turnTime).Unix()
 
-func (l *Lobby) startRound() {
-
-	l.State.RoundEndTime = time.Now().UTC().UnixNano()/1000000 + int64(l.Settings.DrawingTime)*1000
 	TriggerComplexUpdateEvent("next-turn", &NextTurn{
 		Round:        l.State.Round,
 		Players:      l.State.Players,
 		RoundEndTime: l.State.RoundEndTime,
 	}, l)
 
-	//We use milliseconds for higher accuracy
-	l.timeLeftTicker = time.NewTicker(1 * time.Second)
-
 	l.State.WordChoice = l.GetRandomWords()
 	l.sendWordChoice()
 
-	go func() {
-		hintsLeft := 2
-		revealHintAtMillisecondsLeft := l.Settings.DrawingTime * 1000 / 3
+	//We use milliseconds for higher accuracy (noob)
 
+	err := Store.SaveState(l.ID, l.State)
+	if err != nil {
+		fmt.Println("store SaveState error:", err)
+	}
+
+	go func() {
+		turnEnd := time.NewTimer(turnTime)
+		hint1 := time.NewTimer(turnTime * 50 / 100)
+		hint2 := time.NewTimer(turnTime * 75 / 100)
 		for {
 			select {
-			case <-l.timeLeftTicker.C:
-				currentTime := time.Now().UTC().UnixNano() / 1000000
-				if currentTime >= l.State.RoundEndTime {
-					go l.endRound()
-				}
-
-				if hintsLeft > 0 && l.State.WordHints != nil {
-					timeLeft := l.State.RoundEndTime - currentTime
-					if timeLeft <= int64(revealHintAtMillisecondsLeft*hintsLeft) {
-						hintsLeft--
-
-						for {
-							randomIndex := rand.Int() % len(l.State.WordHints)
-							if l.State.WordHints[randomIndex].Character == 0 {
-								l.State.WordHints[randomIndex].Character = []rune(l.State.CurrentWord)[randomIndex]
-								l.triggerWordHintUpdate()
-								break
-							}
-						}
-					}
-				}
-			case <-l.timeLeftTickerReset:
+			case <-turnEnd.C:
+				l.advanceLobby()
+				return
+			case <-hint1.C:
+				l.nextHint()
+			case <-hint2.C:
+				l.nextHint()
+			case <-l.turnDone:
+				fmt.Printf("Finished turn in round %d at %s", l.State.Round, time.Now())
 				return
 			}
 		}
 	}()
 }
 
-func (l *Lobby) endRound() {
-	l.State.Round++
-
-	if l.State.Round > l.Settings.Rounds {
-		// game over
-		l.State.Drawer = ""
-		l.State.Round = 1
-
-		WritePublicSystemMessage(l, "Game over. Type !start again to start a new round.")
+func (l *Lobby) nextHint() {
+	tries := 0
+	hints := len(l.State.WordHints)
+	if hints == 0 {
+		return
+	}
+	for {
+		randomIndex := rand.Intn(hints)
+		if l.State.WordHints[randomIndex].Character == 0 {
+			l.State.WordHints[randomIndex].Character = []rune(l.State.CurrentWord)[randomIndex]
+			l.triggerWordHintUpdate()
+			break
+		}
+		tries++
+		if tries > 20 {
+			return
+		}
+	}
+	err := Store.SaveState(l.ID, l.State)
+	if err != nil {
+		fmt.Println("store SaveState error:", err)
 	}
 
-	if l.timeLeftTicker != nil {
-		l.timeLeftTicker.Stop()
-		l.timeLeftTicker = nil
-		l.timeLeftTickerReset <- struct{}{}
-	}
+}
 
-	var roundOverMessage string
+func (l *Lobby) endTurn() {
+	var turnMsg string
 	if l.State.CurrentWord == "" {
-		roundOverMessage = "Round over. No word was chosen."
+		turnMsg = "Turn over. No word was chosen."
 	} else {
-		roundOverMessage = fmt.Sprintf("Round over. The word was '%s'", l.State.CurrentWord)
+		turnMsg = fmt.Sprintf("Turn over. The word was '%s'", l.State.CurrentWord)
 	}
 
 	//The drawer can potentially be null if he's kicked, in that case we proceed with the round if anyone has already
@@ -320,6 +295,8 @@ func (l *Lobby) endRound() {
 	l.State.CurrentWord = ""
 	l.State.WordHints = nil
 
+	close(l.turnDone)
+
 	//If the round ends and people still have guessing, that means the "Last" value
 	////for the next turn has to be "no score earned".
 	for _, p := range l.State.Players {
@@ -328,7 +305,20 @@ func (l *Lobby) endRound() {
 		}
 	}
 
-	WritePublicSystemMessage(l, roundOverMessage)
+	WritePublicSystemMessage(l, turnMsg)
+}
+
+func (l *Lobby) endRound() {
+	if l.State.Round == 0 {
+		return
+	}
+	if l.State.Round > l.Settings.Rounds {
+		// game over
+		l.State.Drawer = ""
+		l.State.Round = 1
+		WritePublicSystemMessage(l, "Game over. Type !start again to start a new round.")
+	}
+	l.clearDrawn()
 
 	err := Store.SaveState(l.ID, l.State)
 	if err != nil {

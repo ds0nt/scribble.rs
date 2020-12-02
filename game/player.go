@@ -22,7 +22,7 @@ const (
 // Player represents a participant in a Lobby.
 type Player struct {
 	// userSession uniquely identifies the player.
-	userSession string
+	UserSession string `json:"-"`
 	ws          *websocket.Conn
 	wsMu        *sync.Mutex
 
@@ -54,7 +54,7 @@ func createPlayer(name, session string) *Player {
 		session = uuid.NewV4().String()
 	}
 	return &Player{
-		userSession:  session,
+		UserSession:  session,
 		wsMu:         &sync.Mutex{},
 		votedForKick: make(map[string]bool),
 		ID:           uuid.NewV4().String(),
@@ -65,7 +65,7 @@ func createPlayer(name, session string) *Player {
 }
 
 func (p *Player) GetSession() string {
-	return p.userSession
+	return p.UserSession
 }
 
 // GetWebsocket simply returns the players websocket connection. This method
