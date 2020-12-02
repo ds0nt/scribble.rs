@@ -54,6 +54,7 @@ func (m *LobbySettings) UnmarshalBinary(data []byte) error {
 type LobbyState struct {
 	Owner   string             // Owner references the Player that created the lobby.
 	Players map[string]*Player // Players references all participants of the Lobby.
+	Started bool
 
 	Drawer       string // Drawer references the Player that is currently drawing.
 	Round        int    // Round  between 0 and MaxRounds. 0 indicates that it hasn't started yet.

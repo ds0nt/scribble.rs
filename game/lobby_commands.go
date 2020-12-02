@@ -79,8 +79,10 @@ func (l *Lobby) Connect(player *Player) {
 		return
 	}
 
-	l.State.Drawer = player.ID
-	player.State = PlayerStateDrawing
+	if l.State.Started {
+		l.State.Drawer = player.ID
+		player.State = PlayerStateDrawing
+	}
 
 	l.triggerPlayersUpdate()
 
@@ -177,14 +179,50 @@ type NextTurn struct {
 	RoundEndTime int64              `json:"roundEndTime"`
 }
 
-func (l *Lobby) advanceLobby() {
-	l.ClearDrawing()
+func (l *Lobby) endTurn() {
+	var turnMsg string
+	if l.State.CurrentWord == "" {
+		turnMsg = "Turn over. No word was chosen."
+	} else {
+		turnMsg = fmt.Sprintf("Turn over. The word was '%s'", l.State.CurrentWord)
+	}
 
-	if l.turnDone != nil {
-		// in case of a database loaded lobby the turnDone channel may be nil  on round 1
+	//The drawer can potentially be null if he's kicked, in that case we proceed with the round if anyone has already
+	drawer, ok := l.State.Players[l.State.Drawer]
+	if ok && l.scoreEarnedByGuessers > 0 {
+		averageScore := float64(l.scoreEarnedByGuessers) / float64(len(l.State.Players)-1)
+		if averageScore > 0 {
+			drawer.LastScore = int(averageScore * 1.1)
+			drawer.Score += drawer.LastScore
+		}
+	}
+
+	l.scoreEarnedByGuessers = 0
+	l.alreadyUsedWords = append(l.alreadyUsedWords, l.State.CurrentWord)
+	l.State.CurrentWord = ""
+	l.State.WordHints = nil
+
+	close(l.turnDone)
+
+	//If the round ends and people still have guessing, that means the "Last" value
+	////for the next turn has to be "no score earned".
+	for _, p := range l.State.Players {
+		if p.State == PlayerStateGuessing {
+			p.LastScore = 0
+		}
+	}
+
+	WritePublicSystemMessage(l, turnMsg)
+}
+
+func (l *Lobby) advanceLobby() {
+
+	// do not end before the first turn
+	if l.State.Started {
 		l.endTurn()
 	}
 
+	l.ClearDrawing()
 	l.turnDone = make(chan struct{})
 
 	p := l.GetPlayerById(l.State.Drawer)
@@ -226,7 +264,7 @@ func (l *Lobby) advanceLobby() {
 		fmt.Println("store SaveState error:", err)
 	}
 
-	go func() {
+	go func(ch chan struct{}) {
 		turnEnd := time.NewTimer(turnTime)
 		hint1 := time.NewTimer(turnTime * 50 / 100)
 		hint2 := time.NewTimer(turnTime * 75 / 100)
@@ -239,12 +277,12 @@ func (l *Lobby) advanceLobby() {
 				l.nextHint()
 			case <-hint2.C:
 				l.nextHint()
-			case <-l.turnDone:
+			case <-ch:
 				fmt.Printf("Finished turn in round %d at %s", l.State.Round, time.Now())
 				return
 			}
 		}
-	}()
+	}(l.turnDone)
 }
 
 func (l *Lobby) nextHint() {
@@ -272,53 +310,21 @@ func (l *Lobby) nextHint() {
 
 }
 
-func (l *Lobby) endTurn() {
-	var turnMsg string
-	if l.State.CurrentWord == "" {
-		turnMsg = "Turn over. No word was chosen."
-	} else {
-		turnMsg = fmt.Sprintf("Turn over. The word was '%s'", l.State.CurrentWord)
-	}
-
-	//The drawer can potentially be null if he's kicked, in that case we proceed with the round if anyone has already
-	drawer, ok := l.State.Players[l.State.Drawer]
-	if ok && l.scoreEarnedByGuessers > 0 {
-		averageScore := float64(l.scoreEarnedByGuessers) / float64(len(l.State.Players)-1)
-		if averageScore > 0 {
-			drawer.LastScore = int(averageScore * 1.1)
-			drawer.Score += drawer.LastScore
-		}
-	}
-
-	l.scoreEarnedByGuessers = 0
-	l.alreadyUsedWords = append(l.alreadyUsedWords, l.State.CurrentWord)
-	l.State.CurrentWord = ""
-	l.State.WordHints = nil
-
-	close(l.turnDone)
-
-	//If the round ends and people still have guessing, that means the "Last" value
-	////for the next turn has to be "no score earned".
-	for _, p := range l.State.Players {
-		if p.State == PlayerStateGuessing {
-			p.LastScore = 0
-		}
-	}
-
-	WritePublicSystemMessage(l, turnMsg)
-}
-
 func (l *Lobby) endRound() {
 	if l.State.Round == 0 {
 		return
 	}
-	if l.State.Round > l.Settings.Rounds {
+	if l.State.Round == l.Settings.Rounds {
 		// game over
 		l.State.Drawer = ""
 		l.State.Round = 1
 		WritePublicSystemMessage(l, "Game over. Type !start again to start a new round.")
+	} else {
+		l.State.Round++
 	}
 	l.clearDrawn()
+
+	fmt.Println("Next round", l.State.Round)
 
 	err := Store.SaveState(l.ID, l.State)
 	if err != nil {

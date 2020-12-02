@@ -25,6 +25,8 @@ func GetLoadLobby(id string) (*Lobby, error) {
 		return nil, err
 	}
 
+	lobby.turnDone = make(chan struct{})
+
 	lobbiesMu.Lock()
 	lobbies = append(lobbies, lobby)
 	lobbiesMu.Unlock()

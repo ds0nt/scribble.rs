@@ -68,10 +68,10 @@ func TestGame(t *testing.T) {
 	// connect player
 	lobby.Connect(bro)
 
-	require.Equal(t, bro.State, game.PlayerStateDrawing)
+	require.Equal(t, bro.State, game.PlayerStateGuessing)
 	require.Equal(t, lobby.State.Round, 0)
 	require.False(t, lobby.State.RoundEndTime > 0)
-	require.Equal(t, lobby.State.Drawer, bro.ID)
+	require.Equal(t, lobby.State.Drawer, "")
 	require.Equal(t, lobby.State.CurrentWord, "")
 	require.Empty(t, lobby.State.WordChoice)
 	require.Empty(t, lobby.State.WordHints)
@@ -85,6 +85,8 @@ func TestGame(t *testing.T) {
 	// choose word before game started
 	err = lobby.HandlePacket([]byte(`{"type":"start"}`), bro)
 	require.Nil(t, err)
+
+	time.Sleep(time.Millisecond)
 
 	require.Equal(t, bro.State, game.PlayerStateDrawing)
 	require.Equal(t, lobby.State.Round, 1)
@@ -133,32 +135,37 @@ func TestGame(t *testing.T) {
 
 	require.Equal(t, lobby.State.Round, 1)
 
-	lobby.HandlePacket([]byte(`{"type":"message", "data": "`+lobby.State.CurrentWord+`"}`), sis)
-	lobby.HandlePacket([]byte(`{"type":"message", "data": "`+lobby.State.CurrentWord+`"}`), sis2)
-	lobby.HandlePacket([]byte(`{"type":"message", "data": "`+lobby.State.CurrentWord+`"}`), bro2)
-
 	time.Sleep(time.Millisecond * 10)
 
 	require.Equal(t, lobby.State.Round, 1)
 
-	for i := 2; i < 5; i++ {
-		drawer := lobby.GetPlayerById(lobby.State.Drawer)
+	// rounds
+	for round := 1; round < 5; round++ {
+		// turns
+		require.Equal(t, lobby.State.Round, round)
 
-		// choose word before game started
-		err = lobby.HandlePacket([]byte(`{"type":"choose-word", "data":0}`), drawer)
-		require.NotNil(t, err)
+		for turn := 1; turn < 5; turn++ {
+			drawer := lobby.GetPlayerById(lobby.State.Drawer)
 
-		// insert bullshit drawing data here.
-		require.NotNil(t, err)
-		for _, p := range lobby.State.Players {
-			if p == drawer {
-				continue
+			// choose word before game started
+			err = lobby.HandlePacket([]byte(`{"type":"choose-word", "data":0}`), drawer)
+			require.Nil(t, err)
+
+			// insert bullshit drawing data here.
+			for _, p := range lobby.State.Players {
+				if p == drawer {
+					continue
+				}
+
+				err = lobby.HandlePacket([]byte(`{"type":"message", "data": "`+lobby.State.CurrentWord+`"}`), p)
+				require.Nil(t, err)
 			}
 
-			lobby.HandlePacket([]byte(`{"type":"message", "data": "`+lobby.State.CurrentWord+`"}`), bro2)
+			if turn != 4 {
+				require.Equal(t, lobby.State.Round, round)
+			} else {
+				require.Equal(t, lobby.State.Round, round+1)
+			}
 		}
-		require.Equal(t, lobby.State.Round, i)
-
 	}
-
 }

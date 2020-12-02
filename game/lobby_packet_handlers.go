@@ -187,13 +187,15 @@ func (l *Lobby) kickVote(p *Packet, bytes []byte, from *Player) error {
 
 func (l *Lobby) start(p *Packet, bytes []byte, from *Player) error {
 
-	if l.State.Round == 0 && from.ID == l.State.Owner {
+	if !l.State.Started && from.ID == l.State.Owner {
 		for _, otherPlayer := range l.State.Players {
 			otherPlayer.Score = 0
 			otherPlayer.LastScore = 0
 		}
 		l.State.Round = 1
 		l.advanceLobby()
+		l.State.Started = true
+
 	}
 
 	return nil
