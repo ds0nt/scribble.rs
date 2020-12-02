@@ -9,18 +9,20 @@ import gameState from './lib/game-state.js';
 
 var context = drawingBoard.getContext("2d")
 
-function handleCanvasResize() {
+function handleCanvasResize(e) {
     drawingBoard.width = drawingBoard.clientWidth;
     drawingBoard.height = drawingBoard.clientHeight;
     
     gameState.setState({
-        localLineWidthUnscaled: gameState.state.localLineWidthUnscaled,
         localLineWidth: gameState.state.localLineWidthUnscaled * scaleDownFactor(),
     })
+
+    clear();
+    applyDrawData(gameState.state.currentDrawing)
 }
 
 handleCanvasResize();
-window.addEventListener("resize", handleCanvasResize, false);
+window.addEventListener("resize", handleCanvasResize, true);
 
 
 export function applyDrawData(drawElements) {

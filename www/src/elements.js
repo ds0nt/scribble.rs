@@ -55,17 +55,16 @@ export const selectTool = index => {
 }
 
 export function showDialog(dialog) {
-    centerDialog.style.display = "block"
-    startDialog.style.display = "none"
-    wordDialog.style.display = "none"
-    scoreDialog.style.display = "none"
+    hideDialog()
     
+    centerDialog.style.display = "block"
     dialog.style.display = "block"
 }
 
 export const hideDialog = () => {
     centerDialog.style.display = "none"
     startDialog.style.display = "none"
+    startDialogWaiting.style.display = "none"
     wordDialog.style.display = "none"
     scoreDialog.style.display = "none"
 }

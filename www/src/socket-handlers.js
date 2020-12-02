@@ -100,14 +100,14 @@ export function registerSocketHandlers() {
 
 
     socket.addHandler("next-turn", (pkt) => {
-        elements.hideDialog()
         if (pkt.data.round === 0) {
-            elements.showDialog(elements.startDialog)
             if (gameState.state.ownID === gameState.state.ownerID) {
                 elements.showDialog(elements.startDialog)                
             } else {
                 elements.showDialog(elements.startDialogWaiting)               
             }
+        } else {
+            elements.hideDialog()
         }
 
 
