@@ -584,3 +584,20 @@ body {
         grid-template-rows: 9vw 9vw 9vw 9vw;
     }
 }
+
+#me{
+    position: relative;
+    width: 50%;
+    margin: 0 auto;
+    display: block;
+}
+#me video{
+    position: relative !important;
+}
+#remote-container{
+    display: flex;
+}
+#remote-container video{
+    height: auto;
+    position: relative !important;
+}

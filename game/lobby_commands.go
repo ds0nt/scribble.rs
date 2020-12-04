@@ -25,8 +25,8 @@ func RemoveLobby(id string) {
 	}
 }
 
-func (l *Lobby) JoinPlayer(playerName, session string) *Player {
-	player := createPlayer(playerName, session)
+func (l *Lobby) JoinPlayer(playerName, session string, avatarId int) *Player {
+	player := createPlayer(playerName, session, avatarId)
 
 	//FIXME Make a dedicated method that uses a mutex?
 

@@ -135,7 +135,7 @@ type Rounds struct {
 
 // NewLobby allows creating a lobby, optionally returning errors that
 // occured during creation.
-func NewLobby(ownerName, session, language string, settings LobbySettings) (*Player, *Lobby, error) {
+func NewLobby(ownerName, session, language string, avatarId int, settings LobbySettings) (*Player, *Lobby, error) {
 
 	lobby := &Lobby{
 		ID: uuid.NewV4().String(),
@@ -158,7 +158,7 @@ func NewLobby(ownerName, session, language string, settings LobbySettings) (*Pla
 	lobbies = append(lobbies, lobby)
 	lobbiesMu.Unlock()
 
-	player := createPlayer(ownerName, session)
+	player := createPlayer(ownerName, session, avatarId)
 
 	lobby.State.Players[player.ID] = player
 	lobby.State.Owner = player.ID

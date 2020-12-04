@@ -29,3 +29,13 @@ elements.startDialog.style.display = "none"
 elements.startDialogWaiting.style.display = "none"
 
 socket.open()
+
+require('./lib/video')
+
+window.addEventListener("resize", () => {
+    if (window.innerWidth < window.innerHeight) {
+         document.getElementById("mask").style.display = "flex"
+    } else {
+        document.getElementById("mask").style.display = "none"
+    }
+});

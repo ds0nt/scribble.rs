@@ -36,7 +36,7 @@ func TestGame(t *testing.T) {
 		fmt.Println("WritePublicSystemMessage")
 	}
 
-	bro, lobby, err := game.NewLobby("test-bro", "test-bro-session", "english", game.LobbySettings{
+	bro, lobby, err := game.NewLobby("test-bro", "test-bro-session", "english", 1, game.LobbySettings{
 		ClientsPerIPLimit: 5,
 		CustomWords:       []string{},
 		CustomWordsChance: 100,
@@ -112,21 +112,21 @@ func TestGame(t *testing.T) {
 
 	require.Len(t, lobby.State.Players, 1)
 
-	bro2Session := lobby.JoinPlayer("test-bro2", "test-bro2-session")
+	bro2Session := lobby.JoinPlayer("test-bro2", "test-bro2-session", 0)
 	require.Len(t, lobby.State.Players, 2)
 	bro2 := lobby.GetPlayerBySession(bro2Session.UserSession)
 	require.Equal(t, bro2.State, game.PlayerStateGuessing)
 	require.Equal(t, bro2.Drawn, false)
 	lobby.Connect(bro2)
 
-	sisSession := lobby.JoinPlayer("test-sis", "test-sis-session")
+	sisSession := lobby.JoinPlayer("test-sis", "test-sis-session", 0)
 	require.Len(t, lobby.State.Players, 3)
 	sis := lobby.GetPlayerBySession(sisSession.UserSession)
 	require.Equal(t, sis.State, game.PlayerStateGuessing)
 	require.Equal(t, sis.Drawn, false)
 	lobby.Connect(sis)
 
-	sis2Session := lobby.JoinPlayer("test-sis2", "test-sis2-session")
+	sis2Session := lobby.JoinPlayer("test-sis2", "test-sis2-session", 0)
 	require.Len(t, lobby.State.Players, 4)
 	sis2 := lobby.GetPlayerBySession(sis2Session.UserSession)
 	require.Equal(t, sis2.State, game.PlayerStateGuessing)

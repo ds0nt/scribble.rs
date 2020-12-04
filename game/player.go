@@ -33,7 +33,8 @@ type Player struct {
 	// Name is the players displayed name
 	Name string `json:"name"`
 	// Score is the points that the player got in the current Lobby.
-	Score int `json:"score"`
+	Score    int `json:"score"`
+	AvatarId int `json:"avatarId"`
 
 	// Connected defines whether the players websocket connection is currently
 	// established. This has previously been in state but has been moved out
@@ -49,7 +50,7 @@ type Player struct {
 	State     PlayerState `json:"state"`
 }
 
-func createPlayer(name, session string) *Player {
+func createPlayer(name, session string, avatarId int) *Player {
 	if session == "" {
 		session = uuid.NewV4().String()
 	}
@@ -61,6 +62,7 @@ func createPlayer(name, session string) *Player {
 		Name:         name,
 		Rank:         1,
 		State:        PlayerStateGuessing,
+		AvatarId:     avatarId,
 	}
 }
 

@@ -68,6 +68,18 @@ export const hideDialog = () => {
     wordDialog.style.display = "none"
     scoreDialog.style.display = "none"
 }
+
+const avatars = [
+    "resources/image/avatar_emily.png",
+    "resources/image/avatar_hannah.png",
+    "resources/image/avatar_luciana.png",
+    "resources/image/avatar_martina.png",
+    "resources/image/avatar_phillip.png",
+    "resources/image/avatar_susan.png",
+    "resources/image/avatar_tamini.png",
+    "resources/image/avatar_tas.png",
+]
+
 export function applyPlayers(players, ownID) {
     
     playerContainer.innerHTML = "";
@@ -84,7 +96,7 @@ export function applyPlayers(players, ownID) {
             stateStyleClass = '';
         }
         let newPlayerElement = '<div class="playerBox">' +
-            ' <img src="../resources/image/avatar_phillip.png" alt="">' +
+            ' <img src="../'+avatars[player.avatarId]+'" alt="">' +
             '<div class="name';
         //Tas: not sure if we need to add this
         // if (player.id === ownID) {

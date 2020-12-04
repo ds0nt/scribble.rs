@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/scribble-rs/scribble.rs/game"
@@ -14,7 +15,12 @@ import (
 func getLobbyHandler(r *http.Request) (*game.Lobby, error) {
 	lobbyID := r.URL.Query().Get("lobby_id")
 	if lobbyID == "" {
-		return nil, errors.New("the requested lobby doesn't exist")
+
+		lobbyCookie, err := r.Cookie("X-LobbyId")
+		if err != nil || lobbyCookie.Value == "" {
+			return nil, errors.New("the requested lobby doesn't exist")
+		}
+		lobbyID = lobbyCookie.Value
 	}
 
 	lobby, err := game.GetLoadLobby(lobbyID)
@@ -41,11 +47,38 @@ func userSession(r *http.Request) string {
 	return ""
 }
 
+func getAvatarId(r *http.Request) (int, bool) {
+	if r.Form.Get("avatarId") != "" {
+		avatar, err := strconv.Atoi(r.Form.Get("avatarId"))
+		if err != nil {
+			fmt.Println("avatar id was bad int")
+			return 0, false
+		}
+		return avatar, true
+	}
+
+	avatarCookie, noCookieError := r.Cookie("X-Avatar")
+	if noCookieError == nil {
+		avatar, err := strconv.Atoi(avatarCookie.Value)
+		if err != nil {
+			fmt.Println("avatar id was bad int")
+			return 0, false
+		}
+		return avatar, true
+	}
+
+	return 0, false
+}
 func getPlayer(lobby *game.Lobby, r *http.Request) *game.Player {
 	return lobby.GetPlayerBySession(userSession(r))
 }
 
 func getPlayernameHandler(r *http.Request) string {
+	name := r.Form.Get("name")
+	if len(name) > 0 {
+		return trimDownTo(name, 30)
+	}
+
 	usernameCookie, noCookieError := r.Cookie("X-Username")
 	if noCookieError == nil {
 		username := html.EscapeString(strings.TrimSpace(usernameCookie.Value))
@@ -62,7 +95,7 @@ func getPlayernameHandler(r *http.Request) string {
 		}
 	}
 
-	return game.GeneratePlayerName()
+	return "" // game.GeneratePlayerName()
 }
 
 func trimDownTo(text string, size int) string {
@@ -134,6 +167,22 @@ func getWordHintHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func enoughIPs(r *http.Request, l *game.Lobby) bool {
+	matches := 0
+
+	for _, p := range l.State.Players {
+		socket := p.GetWebsocket()
+		if socket != nil && remoteAddressToSimpleIP(socket.RemoteAddr().String()) == remoteAddressToSimpleIP(r.RemoteAddr) {
+			matches++
+		}
+	}
+
+	if matches >= l.Settings.ClientsPerIPLimit {
+		return false
+	}
+	return true
+}
+
 const (
 	DrawingBoardBaseWidth  = 1600
 	DrawingBoardBaseHeight = 900
@@ -155,6 +204,28 @@ func ssrEnterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// redirect to home page if no username yet
+	playerName := getPlayernameHandler(r)
+	playerAvatar, ok := getAvatarId(r)
+	if playerName == "" || !ok {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "X-LobbyId",
+			Value:    lobby.ID,
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
+		})
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	// clear redirect otherwise
+	http.SetCookie(w, &http.Cookie{
+		Name:     "X-LobbyId",
+		Value:    "",
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+
 	// TODO Improve this. Return metadata or so instead.
 	userAgent := strings.ToLower(r.UserAgent())
 	if !(strings.Contains(userAgent, "gecko") || strings.Contains(userAgent, "chrom") || strings.Contains(userAgent, "opera") || strings.Contains(userAgent, "safari")) {
@@ -168,7 +239,15 @@ func ssrEnterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player := getPlayer(lobby, r)
+	if lobby.IsFull() {
+		userFacingError(w, "Sorry, but the lobby is full.")
+		return
+	}
+
+	if !enoughIPs(r, lobby) {
+		userFacingError(w, "Sorry, but you have exceeded the maximum number of clients per IP.")
+		return
+	}
 
 	pageData := &LobbyData{
 		LobbyID:                lobby.ID,
@@ -176,48 +255,26 @@ func ssrEnterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 		DrawingBoardBaseHeight: DrawingBoardBaseHeight,
 	}
 
-	var templateError error
-
-	if player == nil {
-		if lobby.IsFull() {
-			userFacingError(w, "Sorry, but the lobby is full.")
-			return
-		}
-
-		matches := 0
-		for _, otherPlayer := range lobby.State.Players {
-			socket := otherPlayer.GetWebsocket()
-			if socket != nil && remoteAddressToSimpleIP(socket.RemoteAddr().String()) == remoteAddressToSimpleIP(r.RemoteAddr) {
-				matches++
-			}
-		}
-
-		if matches >= lobby.Settings.ClientsPerIPLimit {
-			userFacingError(w, "Sorry, but you have exceeded the maximum number of clients per IP.")
-			return
-		}
-
-		var playerName = getPlayernameHandler(r)
-		var playerSession = userSession(r)
-		player = lobby.JoinPlayer(playerName, playerSession)
-
+	lobbyPlayer := getPlayer(lobby, r)
+	if lobbyPlayer == nil {
+		lobbyPlayer = lobby.JoinPlayer(playerName, "", playerAvatar)
 	}
 
 	// Use the players generated usersession and pass it as a cookie.
 	http.SetCookie(w, &http.Cookie{
 		Name:     "X-UserSession",
-		Value:    player.GetSession(),
+		Value:    lobbyPlayer.GetSession(),
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 	})
-	http.SetCookie(w, &http.Cookie{
-		Name:     "X-Username",
-		Value:    player.Name,
-		Path:     "/",
-		SameSite: http.SameSiteLaxMode,
-	})
+	// http.SetCookie(w, &http.Cookie{
+	// 	Name:     "X-Username",
+	// 	Value:    player.Name,
+	// 	Path:     "/",
+	// 	SameSite: http.SameSiteLaxMode,
+	// })
 
-	templateError = lobbyPage.ExecuteTemplate(w, "lobby.html", pageData)
+	templateError := lobbyPage.ExecuteTemplate(w, "lobby.html", pageData)
 	if templateError != nil {
 		panic(templateError)
 	}

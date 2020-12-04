@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/kr/pretty v0.1.0
 	github.com/kr/text v0.2.0 // indirect
-	github.com/markbates/pkger v0.15.1
+	github.com/markbates/pkger v0.17.0
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo v1.14.2 // indirect
 	github.com/onsi/gomega v1.10.3 // indirect

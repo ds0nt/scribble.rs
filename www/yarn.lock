@@ -935,6 +935,11 @@ acorn@^8.0.4:
   version "8.0.4"
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.0.4.tgz#7a3ae4191466a6984eee0fe3407a4f3aa9db8354"
 
+agora-rtc-sdk@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/agora-rtc-sdk/-/agora-rtc-sdk-3.3.0.tgz#76e2cc4969bf8d4e76a0d20028072787aec195a0"
+  integrity sha512-bRI+RpYyDMVCZ+F+mEA3+vYryCy2Z+8dbLeMe36JIowmVzmFENw824q4e7ZG8M3VCOvHAke/qqgeevu1OcWmVg==
+
 ajv-keywords@^3.5.2:
   version "3.5.2"
   resolved "https://registry.yarnpkg.com/ajv-keywords/-/ajv-keywords-3.5.2.tgz#31f29da5ab6e00d1c2d329acf7b5929614d5014d"

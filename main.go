@@ -2,8 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -13,7 +15,9 @@ import (
 )
 
 var (
-	portHTTP *int
+	portHTTP  *int
+	redisHost = os.Getenv("REDIS_HOST")
+	redisPort = os.Getenv("REDIS_PORT")
 )
 
 func main() {
@@ -25,8 +29,15 @@ func main() {
 
 	log.Println("Started on http://localhost:8080/")
 
+	if redisHost == "" {
+		redisHost = "127.0.0.1"
+	}
+	if redisPort == "" {
+		redisPort = "6379"
+	}
+
 	game.Store = store.NewRedisStore(&redis.Options{
-		Addr: "127.0.01:6379",
+		Addr: fmt.Sprintf("%s:%s", redisHost, redisPort),
 	})
 
 	//If this ever fails, it will return and print a fatal logger message

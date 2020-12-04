@@ -19,10 +19,6 @@ func makeServeMux() *http.ServeMux {
 	//The websocket is shared between the public API and the official client
 	mux.HandleFunc("/v1/ws", wsEndpoint)
 
-	//These exist only for the public API. We version them in order to ensure
-	//backwards compatibility as far as possible.
-	mux.HandleFunc("/v1/lobby", createLobbyHandler)
-	mux.HandleFunc("/v1/lobby/player", enterLobbyHandler)
 	return mux
 }
 

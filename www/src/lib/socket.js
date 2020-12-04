@@ -17,10 +17,10 @@
 class Socket {
     handlers = {}
     constructor() {
-        // let wsURL(location.protocol === 'https:' ? "wss://" : "ws://") + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId
-        let wsURL = "ws://" + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId
+        let wsURL = (location.protocol === 'https:' ? "wss://" : "ws://") + location.hostname + ":" + location.port + "/v1/ws?lobby_id=" + window.lobbyId
 
-        this.socket = new ReconnectingWebSocket(wsURL, null, { debug: false, reconnectInterval: 3000, automaticOpen: true });
+      
+        this.socket = new ReconnectingWebSocket(wsURL, null, { debug: false, reconnectInterval: 3000, automaticOpen: false });
         this.socket.onmessage = e => {
             let parsed = JSON.parse(e.data);
             if (typeof this.handlers[parsed.type] == 'undefined') {

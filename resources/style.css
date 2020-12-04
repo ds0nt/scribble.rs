@@ -17,13 +17,13 @@ html {
 }
  
 body {
-    background-color: #EEF7EF;
+    background-color: white;
 	margin: 0;
     position: relative;
     min-height: 100vh;
 }
 
-.mask {
+#mask {
     position: fixed;
     left: 0;
     top: 0;
@@ -38,7 +38,7 @@ body {
 
 }
 
-.mask p{
+#mask p{
     line-height: 100%;
     color: white;
     font-size: 5vw;
@@ -59,16 +59,11 @@ a:hover {
 h1, h2 {
     margin: 0;
     text-align: center;
-    color: rgb(248, 148, 164);
+    color: #CC362E;
+    font-size: 32pt;
+    margin-bottom: 3rem;
 }
 
-h1 {
-    font-size: 6rem;
-}
-
-h2 {
-    font-size: 4rem;
-}
 
 ul {
     margin: 0;
@@ -142,23 +137,19 @@ header {
 
 .content-container {
     display: block;
-    background-color: rgb(250, 192, 202);
     border-radius: 15px;
     padding: 20px;
 }
 
 .input-container {
-    justify-content: center;
-    align-items: center;
-    display: inline-grid;
-    grid-template-columns: auto auto;
-    grid-column-gap: 20px;
-    grid-row-gap: 10px;
+    text-align: center;
+    background-color: #EEF7EF;
+    padding: 2rem 10rem;
 }
 
 .input-item {
     width: inherit;
-    min-width: 300px;
+    min-width: 250px;
 }
 
 .error-list {
@@ -181,6 +172,85 @@ header {
     padding: 10px;
 }
 .mainBox{
+    background-color: #EEF7EF;
     display: flex;
     flex-direction: column;
+}
+
+#lobby-create b {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+#lobby-create input {
+    padding: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.play-button {
+    background-color: #E37263;
+    color: white;
+    border-radius: 52rem;
+    border: none;
+    padding: 1rem;
+    width: 250px;
+    margin-bottom: 5rem;
+}
+.play-button.valid {
+    background-color: #CC362E;
+}
+
+.img-box button {
+    display: inline;
+    background: none;
+    border: none;
+    line-height: 72px;
+    padding: 1rem;
+}
+
+#lobby-create img {
+    scale: 2;
+    background: none;
+    border-radius: 1000px;
+    background-color: #D6E5D6;
+    line-height: 72px;
+    padding: 0;    
+}
+
+.img-box {
+    display: flex;
+    margin: auto;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 1rem;
+}
+
+.img-box .prev {
+    margin-left: auto;
+    color: #97D87F;
+    outline: none;
+}
+
+.img-box .next {
+    margin-right: auto;
+    color: #CC362E;
+    outline: none;
+}
+
+.dots-box {
+    display: flex;
+    color: black;
+}
+
+
+.dot {
+    font-size: 20pt;
+    content: "\2022";
+    margin: auto;
+    align-items: center;
+    width: 100%;
+}
+
+.big  {
+    font-weight: bold;
 }

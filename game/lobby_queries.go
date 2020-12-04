@@ -1,6 +1,8 @@
 package game
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // GetLobby returns a Lobby that has a matching ID or no Lobby if none could
 // be found.

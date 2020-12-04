@@ -17,11 +17,12 @@ clean:
 
 # build stuff depending and maybe pkged.go if it has changed
 build: pkged.go
-	go build -o scribblers
+	GO111MODULE=on CGO_ENABLED=0 go build -o scribblers
 	./scribblers
 
 dockerize:
-	docker-compose build
+	docker build -t registry.ds0nt.com/scribble:${TAG} -f Dockerfile.bin .
+	docker push registry.ds0nt.com/scribble:${TAG}	
 
 up:
 	docker-compose up -d
