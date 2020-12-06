@@ -110,9 +110,7 @@ export function registerSocketHandlers() {
             elements.hideDialog()
         }
 
-
-        $("#cc-toolbox").css({ 'transform': 'translateX(-150%)' });
-        $("#player-container").css({ 'transform': 'translateX(0)' });
+        elements.hideToolbox()
         //If a player doesn't choose, the dialog will still be up.
 
         audio.endTurn()
@@ -142,8 +140,7 @@ export function registerSocketHandlers() {
                 elements.showDialog(elements.wordDialog)
             }
         }
-        $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
-        $("#player-container").css({ 'transform': 'translateX(-150%)' });
+        elements.showToolbox()
     })
 }
 

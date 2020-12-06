@@ -7,10 +7,8 @@ import { rgbStr2hex } from './lib/util';
 
 export function startGameAction() {
     socket.sendStart()
-    //Tas: not needed
-    //startDialog.style.display = "hidden";
     
-    elements.showDialog(startDialog)
+    elements.showDialog(elements.startDialog)
 }
 
 
@@ -31,8 +29,7 @@ export function chooseWordAction(index) {
 
     elements.hideDialog()
     
-    $("#cc-toolbox").css({ 'transform': 'translateX(0)' });
-    $("#player-container").css({ 'transform': 'translateX(-150%)' });
+    elements.showToolbox()
 
     gameState.setState({ allowDrawing: true })
 }

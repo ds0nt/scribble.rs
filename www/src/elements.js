@@ -2,6 +2,7 @@
 export const playerContainer = document.getElementById("player-container");
 export const wordContainer = document.getElementById("word-container");
 export const roundsSpan = document.getElementById("rounds");
+export const ccToolbox = document.getElementById("cc-toolbox");
 
 export const timeLeft = document.getElementById("time-left");
 export const drawingBoard = document.getElementById("drawing-board");
@@ -67,6 +68,15 @@ export const hideDialog = () => {
     startDialogWaiting.style.display = "none"
     wordDialog.style.display = "none"
     scoreDialog.style.display = "none"
+}
+
+export const showToolbox = () => {
+    ccToolbox.style.transform = 'translateX(0)'
+    playerContainer.style.transform = 'translateX(-150%)'
+}
+export const hideToolbox = () => {
+    ccToolbox.style.transform = 'translateX(-150%)'
+    playerContainer.style.transform = 'translateX(0)'
 }
 
 const avatars = [
