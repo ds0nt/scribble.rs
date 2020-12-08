@@ -1,4 +1,4 @@
-package communication
+package server
 
 import (
 	"fmt"

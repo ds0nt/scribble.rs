@@ -1,4 +1,4 @@
-package communication
+package server
 
 import (
 	"encoding/json"
@@ -191,6 +191,8 @@ const (
 // LobbyData is the data necessary for initially displaying all data of
 // the lobbies webpage.
 type LobbyData struct {
+	AgoraToken             string `json:"agoraToken"`
+	AgoraUID               uint32 `json:"agoraUid"`
 	LobbyID                string `json:"lobbyId"`
 	DrawingBoardBaseWidth  int    `json:"drawingBoardBaseWidth"`
 	DrawingBoardBaseHeight int    `json:"drawingBoardBaseHeight"`
@@ -249,7 +251,13 @@ func ssrEnterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	uid, token, err := getAgoraToken(lobby.ID)
+	if err != nil {
+		fmt.Println("could not get agora token", err)
+	}
 	pageData := &LobbyData{
+		AgoraUID:               uid,
+		AgoraToken:             token,
 		LobbyID:                lobby.ID,
 		DrawingBoardBaseWidth:  DrawingBoardBaseWidth,
 		DrawingBoardBaseHeight: DrawingBoardBaseHeight,

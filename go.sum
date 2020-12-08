@@ -1,3 +1,5 @@
+github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20200910100525-12b7f1b63a6a h1:+/ILLIcuKbrW4kyQ0V574aV9skXRivrcmlg0IBk7apY=
+github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20200910100525-12b7f1b63a6a/go.mod h1:4bXIK0ntDk9CqAXobmomWd7dedbfNv/aaIpmpqqzt+A=
 github.com/Bios-Marcel/cmdp v0.0.0-20190623190758-6760aca2c54e h1:0mIenEIycuRSzIFsawubRbCF2ikRNFSzZeN3VcCRsw8=
 github.com/Bios-Marcel/cmdp v0.0.0-20190623190758-6760aca2c54e/go.mod h1:cn7xf68lOu3CA6FyLYXjn9I2YNb9Xa9ZHvXh2Gq9SHA=
 github.com/Bios-Marcel/discordemojimap v1.0.1 h1:b3UYPO7+h1+ciStkwU/KQCerOmpUNPHsBf4a7EjMdys=

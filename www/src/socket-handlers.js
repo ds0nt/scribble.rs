@@ -60,12 +60,6 @@ export function registerSocketHandlers() {
     socket.addHandler("non-guessing-player-message", (pkt) => {
         elements.applyMessage("non-guessing-player-message", pkt.data.author, pkt.data.content);
     })
-    // socket.addHandler("persist-username", (pkt) => {
-    //     document.cookie = "username=" + pkt.data + ";expires=Tue, 19 Jan 2038 00:00:00 UTC;path=/;samesite=strict";
-    // })
-    // socket.addHandler("reset-username", (pkt) => {
-    //     document.cookie = "username=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    // })
     socket.addHandler("line", (pkt) => {
         if (pkt.data.gestureId > gameState.state.gestureId) {
             gameState.setState({ gestureId: pkt.data.gestureId })

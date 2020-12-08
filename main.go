@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/scribble-rs/scribble.rs/communication"
 	"github.com/scribble-rs/scribble.rs/game"
 	"github.com/scribble-rs/scribble.rs/game/store"
+	"github.com/scribble-rs/scribble.rs/server"
 )
 
 var (
@@ -41,5 +41,5 @@ func main() {
 	})
 
 	//If this ever fails, it will return and print a fatal logger message
-	log.Fatal(communication.Serve(*portHTTP))
+	log.Fatal(server.Serve(*portHTTP))
 }

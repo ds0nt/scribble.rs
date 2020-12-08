@@ -3,6 +3,7 @@ module github.com/scribble-rs/scribble.rs
 go 1.12
 
 require (
+	github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20200910100525-12b7f1b63a6a
 	github.com/Bios-Marcel/cmdp v0.0.0-20190623190758-6760aca2c54e
 	github.com/Bios-Marcel/discordemojimap v1.0.1
 	github.com/agnivade/levenshtein v1.0.3

@@ -18,7 +18,6 @@ clean:
 # build stuff depending and maybe pkged.go if it has changed
 build: pkged.go
 	GO111MODULE=on CGO_ENABLED=0 go build -o scribblers
-	./scribblers
 
 dockerize:
 	docker build -t registry.ds0nt.com/scribble:${TAG} -f Dockerfile.bin .

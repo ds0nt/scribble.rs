@@ -1,6 +1,6 @@
 import AgoraRTC from 'agora-rtc-sdk'
 
-let remoteContainer = document.getElementById("remote-container");
+let remoteContainer = document.getElementById("video-grid");
 
 // Handle errors.
 let handleError = function(err){
@@ -33,13 +33,14 @@ var client = AgoraRTC.createClient({
 });
 
 var appID = "89f97462e28540e68a6a90760c9ca113"
-var token = "00689f97462e28540e68a6a90760c9ca113IAC38B4A5KGQRinee+4FclgXgmRcYhuaSK46TeEYwMioE73zKVEAAAAAEAA1BQ7XjBbLXwEAAQCMFstf"
-var channel = "asdf"
+var token = agoraToken
+var channel = lobbyId
+var uid = agoraUid
 
-client.init(appID);
+client.init(appID)
 
 // Join a channel
-client.join(token, channel, null, (uid)=>{
+client.join(token, channel, uid, (uid)=>{
     // Initialize the local stream
     let localStream = AgoraRTC.createStream({
         audio: true,

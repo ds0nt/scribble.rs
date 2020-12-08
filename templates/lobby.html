@@ -12,9 +12,11 @@
 
 
     <script>
-        window.baseWidth = {{.DrawingBoardBaseWidth }};
-        window.baseHeight = {{.DrawingBoardBaseHeight }};
+        window.baseWidth = {{ .DrawingBoardBaseWidth }};
+        window.baseHeight = {{ .DrawingBoardBaseHeight }};
         window.lobbyId = "{{.LobbyID}}";
+        window.agoraToken = "{{.AgoraToken}}";
+        window.agoraUid = "{{.AgoraUID}}";
     </script>
 
 </head>
@@ -132,15 +134,15 @@
             </form>
         </div>
     </div>
-    <div class="video-grid" id="video">
-        <h4>Local video</h4>
-        <div class="video-view">
-            <div id="me"></div>
-        </div>
-        <h4>Remote video</h4>
 
-        <div id="remote-container">
-        </div>
+    <div id="video-grid">
+        <div id="me"></div>
+        <video style="background: forestgreen;"></video>
+        <video style="background: green;"></video>
+        <video style="background: teal;"></video>
+        <video style="background: cyan;"></video>
+        <video style="background: turquoise;"></video>
+        <video style="background: navy;"></video>
     </div>
 
     <div id="cc-toolbox">
