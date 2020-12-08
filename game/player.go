@@ -48,6 +48,7 @@ type Player struct {
 	LastScore int         `json:"lastScore"`
 	Rank      int         `json:"rank"`
 	State     PlayerState `json:"state"`
+	AgoraUID  uint32      `json:"agora_uid"`
 }
 
 func createPlayer(name, session string, avatarId int) *Player {

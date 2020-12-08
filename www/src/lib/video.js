@@ -33,6 +33,7 @@ var client = AgoraRTC.createClient({
     codec: "vp8",
 });
 
+
 var appID = agoraAppId
 var token = agoraToken
 var channel = lobbyId
@@ -40,10 +41,79 @@ var uid = agoraUid
 
 client.init(appID)
 
+let localStream = null
+let remoteStreams = []
+
+
+ 
+ 
+let mutedAudio = false 
+export const muteAudio = () => {
+    mutedAudio = true;
+    localStream.muteAudio() 
+}
+let mutedVideo = false
+export const muteVideo = () => {
+    mutedVideo = true;
+    localStream.muteVideo() 
+    localStream.disableVideo()
+}
+let mutedOthers = false
+export const muteOthers = () => {
+    mutedOthers = true;
+    remoteStreams.map(v => v.muteAudio()) 
+}
+
+export const unmuteAudio = () => {
+    mutedAudio = false
+    localStream.unmuteAudio()
+}
+export const unmuteVideo = () => {
+    mutedVideo = false
+    localStream.unmuteVideo()
+    localStream.enableVideo()
+
+}
+export const unmuteOthers = () => {
+    mutedOthers = false
+    remoteStreams.map(v => v.unmuteAudio())
+}
+
+document.getElementById("mute-mic").onclick = e => {
+    if (mutedAudio) {
+        e.target.innerHTML = "mute mic"
+        unmuteAudio()
+     } else {
+        e.target.innerHTML = "unmute mic"
+         muteAudio()
+     } 
+
+}
+document.getElementById("mute-camera").onclick = e => {
+    if (mutedVideo) {
+        e.target.innerHTML = "mute camera"
+        unmuteVideo()
+     } else {
+        e.target.innerHTML = "unmute camera"
+         muteVideo()
+     } 
+
+}
+document.getElementById("mute-speakers").onclick = e => {
+    if (mutedOthers) {
+        e.target.innerHTML = "mute speakers"
+        unmuteOthers()
+     } else {
+        e.target.innerHTML = "unmute speakers"
+         muteOthers()
+     } 
+
+}
+
 // Join a channel
 client.join(token, channel, uid, (uid)=>{
     // Initialize the local stream
-    let localStream = AgoraRTC.createStream({
+    localStream = AgoraRTC.createStream({
         audio: true,
         video: true,
     });
@@ -51,6 +121,7 @@ client.join(token, channel, uid, (uid)=>{
     localStream.init(()=>{
         // Play the local stream
         localStream.play("me");
+
         // Publish the local stream
         client.publish(localStream, handleError);
     }, handleError);
@@ -60,6 +131,7 @@ client.join(token, channel, uid, (uid)=>{
 // Subscribe to the remote stream when it is published
 client.on("stream-added", function(evt){
     client.subscribe(evt.stream, handleError);
+    remoteStreams.push(evt.stream)
 });
 // Play the remote stream when it is subsribed
 client.on("stream-subscribed", function(evt){
@@ -71,6 +143,7 @@ client.on("stream-subscribed", function(evt){
 
 // Remove the corresponding view when a remote user unpublishes.
 client.on("stream-removed", function(evt){
+    remoteStreams = remoteStreams.filter(v => v != evt.stream)
     let stream = evt.stream;
     let streamId = String(stream.getId());
     stream.close();
