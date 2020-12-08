@@ -193,6 +193,7 @@ const (
 type LobbyData struct {
 	AgoraToken             string `json:"agoraToken"`
 	AgoraUID               uint32 `json:"agoraUid"`
+	AgoraAppID             string `json:"agoraAppID"`
 	LobbyID                string `json:"lobbyId"`
 	DrawingBoardBaseWidth  int    `json:"drawingBoardBaseWidth"`
 	DrawingBoardBaseHeight int    `json:"drawingBoardBaseHeight"`
@@ -258,6 +259,7 @@ func ssrEnterLobbyHandler(w http.ResponseWriter, r *http.Request) {
 	pageData := &LobbyData{
 		AgoraUID:               uid,
 		AgoraToken:             token,
+		AgoraAppID:             agoraAppID,
 		LobbyID:                lobby.ID,
 		DrawingBoardBaseWidth:  DrawingBoardBaseWidth,
 		DrawingBoardBaseHeight: DrawingBoardBaseHeight,

@@ -19,6 +19,7 @@ function addVideoStream(elementId){
     streamDiv.style.transform = "rotateY(180deg)";
     // Adds the div to the container.
     remoteContainer.appendChild(streamDiv);
+    console.log("Adding video stream", elementId)
 };
 
 // Remove the video stream from the container.
@@ -32,7 +33,7 @@ var client = AgoraRTC.createClient({
     codec: "vp8",
 });
 
-var appID = "89f97462e28540e68a6a90760c9ca113"
+var appID = agoraAppId
 var token = agoraToken
 var channel = lobbyId
 var uid = agoraUid
