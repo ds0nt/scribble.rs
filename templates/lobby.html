@@ -5,6 +5,7 @@
     <title>Connected Canadians Social Game</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="stylesheet" type="text/css" href="/resources/style.css" />
+    <link rel="stylesheet" type="text/css" href="/resources/webfonts/all.min.css" />
     <link rel="stylesheet" type="text/css" href="/resources/lobby.css" />
     <link rel="stylesheet" type="text/css" href="/resources/lobby_players.css" />
     <link rel="icon" type="image/png" href="/resources/favicon.png" />
@@ -138,9 +139,20 @@
 
     <div id="video-grid">
         <div id="me">
-            <button id="mute-mic">mute mic</button>
-            <button id="mute-camera">mute camera</button>
-            <button id="mute-speakers">mute speakers</button>
+            <div id="video-buttons" style="display: none">
+                <button id="mute-mic">
+                    <i class="fas fa-microphone-slash" ></i>
+                    <i style="display: none; color: white;" class="fas fa-microphone" ></i>
+                </button>
+                <button id="mute-camera">
+                    <i class="fas fa-video-slash" ></i>
+                    <i style="display: none;  color: white;" class="fas fa-video" ></i>
+                </button>
+                <button id="mute-speakers">
+                    <i class="fas fa-volume-mute" ></i>
+                    <i style="display: none;  color: white;" class="fas fa-volume-up" ></i>
+                </button>
+            </div>
         </div>
         <!-- <video style="background: forestgreen;"></video>
         <video style="background: green;"></video>

@@ -602,3 +602,29 @@ body {
 #video-grid video {
     position: relative !important;
 }
+
+#me {
+    position: relative;
+}
+
+#me button {
+}
+
+#video-buttons {
+}
+
+#video-buttons button {
+    display: block;
+    border-radius: 100px;
+    background: none;
+    border: none;
+    box-shadow:1px 1px 1px #000000;
+    padding: 0.75rem;
+    margin: 0.25rem;
+    background: white;
+}
+
+#video-grid button.muted {
+    background: red;
+
+}

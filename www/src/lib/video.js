@@ -3,14 +3,14 @@ import AgoraRTC from 'agora-rtc-sdk'
 let remoteContainer = document.getElementById("video-grid");
 
 // Handle errors.
-let handleError = function(err){
+let handleError = function (err) {
     console.error("Error: ", err);
 };
 
 // Query the container to which the remote stream belong.
 
 // Add video streams to the container.
-function addVideoStream(elementId){
+function addVideoStream(elementId) {
     // Creates a new div for every stream
     let streamDiv = document.createElement("div");
     // Assigns the elementId to the div.
@@ -28,7 +28,7 @@ function removeVideoStream(elementId) {
     if (remoteDiv) remoteDiv.parentNode.removeChild(remoteDiv);
 };
 
-var client = AgoraRTC.createClient({ 
+var client = AgoraRTC.createClient({
     mode: "rtc",
     codec: "vp8",
 });
@@ -45,23 +45,31 @@ let localStream = null
 let remoteStreams = []
 
 
- 
- 
-let mutedAudio = false 
+
+export let videoButtons = document.getElementById("video-buttons")
+export let muteMic = document.getElementById("mute-mic")
+export let muteCamera = document.getElementById("mute-camera")
+export let muteSpeakers = document.getElementById("mute-speakers")
+
+
+let mutedAudio = false
 export const muteAudio = () => {
     mutedAudio = true;
-    localStream.muteAudio() 
+    localStream.muteAudio()
+
 }
 let mutedVideo = false
 export const muteVideo = () => {
     mutedVideo = true;
-    localStream.muteVideo() 
+    localStream.muteVideo()
     localStream.disableVideo()
+
 }
 let mutedOthers = false
 export const muteOthers = () => {
     mutedOthers = true;
-    remoteStreams.map(v => v.muteAudio()) 
+    remoteStreams.map(v => v.muteAudio())
+
 }
 
 export const unmuteAudio = () => {
@@ -79,62 +87,81 @@ export const unmuteOthers = () => {
     remoteStreams.map(v => v.unmuteAudio())
 }
 
-document.getElementById("mute-mic").onclick = e => {
+
+muteMic.onclick = e => {
     if (mutedAudio) {
-        e.target.innerHTML = "mute mic"
+        muteMic.className = ""
+        // muteMic.innerHTML = "mute mic"
+        muteMic.children[0].style.display = "inline"
+        muteMic.children[1].style.display = "none"
         unmuteAudio()
-     } else {
-        e.target.innerHTML = "unmute mic"
-         muteAudio()
-     } 
-
+    } else {
+        muteMic.className = "muted"
+        muteMic.children[0].style.display = "none"
+        muteMic.children[1].style.display = "inline"
+        // e.target.innerHTML = "unmute mic"
+        muteAudio()
+    }
 }
-document.getElementById("mute-camera").onclick = e => {
+
+muteCamera.onclick = e => {
     if (mutedVideo) {
-        e.target.innerHTML = "mute camera"
+        muteCamera.className = ""
+        // muteCamera.innerHTML = "mute camera"
+        muteCamera.children[0].style.display = "inline"
+        muteCamera.children[1].style.display = "none"
         unmuteVideo()
-     } else {
-        e.target.innerHTML = "unmute camera"
-         muteVideo()
-     } 
-
+    } else {
+        muteCamera.className = "muted"
+        muteCamera.children[0].style.display = "none"
+        muteCamera.children[1].style.display = "inline"
+        // muteCamera.innerHTML = "unmute camera"
+        muteVideo()
+    }
 }
-document.getElementById("mute-speakers").onclick = e => {
-    if (mutedOthers) {
-        e.target.innerHTML = "mute speakers"
-        unmuteOthers()
-     } else {
-        e.target.innerHTML = "unmute speakers"
-         muteOthers()
-     } 
 
+
+muteSpeakers.onclick = e => {
+    if (mutedOthers) {
+        muteSpeakers.className = ""
+        // muteSpeakers.innerHTML = "mute speakers"
+        muteSpeakers.children[0].style.display = "inline"
+        muteSpeakers.children[1].style.display = "none"
+        unmuteOthers()
+    } else {
+        muteSpeakers.className = "muted"
+        muteSpeakers.children[0].style.display = "none"
+        muteSpeakers.children[1].style.display = "inline"
+        // muteSpeakers.innerHTML = "unmute speakers"
+        muteOthers()
+    }
 }
 
 // Join a channel
-client.join(token, channel, uid, (uid)=>{
+client.join(token, channel, uid, (uid) => {
     // Initialize the local stream
     localStream = AgoraRTC.createStream({
         audio: true,
         video: true,
     });
     // Initialize the local stream
-    localStream.init(()=>{
+    localStream.init(() => {
         // Play the local stream
         localStream.play("me");
-
+        videoButtons.style.display = 'flex';
         // Publish the local stream
         client.publish(localStream, handleError);
     }, handleError);
-  }, handleError);
+}, handleError);
 
 
 // Subscribe to the remote stream when it is published
-client.on("stream-added", function(evt){
+client.on("stream-added", function (evt) {
     client.subscribe(evt.stream, handleError);
     remoteStreams.push(evt.stream)
 });
 // Play the remote stream when it is subsribed
-client.on("stream-subscribed", function(evt){
+client.on("stream-subscribed", function (evt) {
     let stream = evt.stream;
     let streamId = String(stream.getId());
     addVideoStream(streamId);
@@ -142,7 +169,7 @@ client.on("stream-subscribed", function(evt){
 });
 
 // Remove the corresponding view when a remote user unpublishes.
-client.on("stream-removed", function(evt){
+client.on("stream-removed", function (evt) {
     remoteStreams = remoteStreams.filter(v => v != evt.stream)
     let stream = evt.stream;
     let streamId = String(stream.getId());
@@ -150,7 +177,7 @@ client.on("stream-removed", function(evt){
     removeVideoStream(streamId);
 });
 // Remove the corresponding view when a remote user leaves the channel.
-client.on("peer-leave", function(evt){
+client.on("peer-leave", function (evt) {
     let stream = evt.stream;
     let streamId = String(stream.getId());
     stream.close();
