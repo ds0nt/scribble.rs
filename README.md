@@ -25,19 +25,23 @@ The site will not display any ads or share any data with third parties.
 
 Run the following to build the application:
 
+Install Go, Yarn.
+
 ```shell
 git clone https://github.com/scribble-rs/scribble.rs.git
 cd scribble.rs
-go run github.com/markbates/pkger/cmd/pkger -include /resources -include /templates
-go build -o scribblers .
+go mod tidy
+make bundle build
+./start.sh
 ```
 
 This will produce a portable binary called `scribblers`. The binary doesn't
 have any dependencies and should run on every system as long as it has the
 same architecture and OS family as the system it was compiled on.
 
-The default port will be `8080`. The parameter `portHTTP` allows changing the
-port though.
+The default port will be `8080`, and can be configured with the `-portHTTP` flag.
+
+The agora key is provided by environment variable `AGORA_CERT`
 
 It should run on any system that go supports as a compilation target.
 
@@ -46,7 +50,7 @@ have go version `1.13` or higher.
 
 ## Docker
 
-Alternatively there's a docker container:
+Alternatively there's a docker container (which is out of date, ds0nt is guessing):
 
 ```shell
 docker pull biosmarcel/scribble.rs
