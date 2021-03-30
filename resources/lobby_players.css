@@ -5,29 +5,26 @@
     transition: 1s;
 }
 .playerBox{
-    display: grid;
+    display: flex;
     grid-template-columns: auto auto auto;
     background: #F5F5F5 0% 0% no-repeat padding-box;
     border: solid #707070 1px;
 }
-.playerName{
-    display: flex;
-    align-items: center;
-    line-height: 100%;
-    text-align: left;
+.playerBox .name{
+    vertical-align: middle;
     letter-spacing: 0;
     color: #363636;
-    height: 100%;
+    margin: auto;
 }
-.playerScore{
-    height: 100%;
-    display: flex;
-    align-items: center;
+.playerBox .score{
+    margin: auto 1rem auto auto;
+    align-self: flex-end;
     text-align: left;
     letter-spacing: 0;
     color: #363636;
     font-weight: bold;
 }
+
 .self {
     font-weight: bold;
 }

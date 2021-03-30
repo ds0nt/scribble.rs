@@ -13,7 +13,7 @@ var (
 	wordListCache = make(map[string][]string)
 	languageMap   = map[string]string{
 		"english": "words_en",
-		"french": "words_fr",
+		"french":  "words_fr",
 	}
 )
 
@@ -24,9 +24,9 @@ func readWordList(chosenLanguage string) ([]string, error) {
 		return list, nil
 	}
 
-	wordListFile, pkgerError := pkger.Open("/resources/words/" + langFileName)
-	if pkgerError != nil {
-		panic(pkgerError)
+	wordListFile, err := pkger.Open("/resources/words/" + langFileName)
+	if err != nil {
+		panic(err)
 	}
 	defer wordListFile.Close()
 
@@ -59,14 +59,14 @@ func readWordList(chosenLanguage string) ([]string, error) {
 // GetRandomWords gets 3 random words for the passed Lobby. The words will be
 // chosen from the custom words and the default dictionary, depending on the
 // settings specified by the Lobby-Owner.
-func GetRandomWords(lobby *Lobby) []string {
+func (l *Lobby) GetRandomWords() []string {
 	rand.Seed(time.Now().Unix())
-	wordsNotToPick := lobby.alreadyUsedWords
-	wordOne := getRandomWordWithCustomWordChance(lobby, wordsNotToPick, lobby.CustomWords, lobby.CustomWordsChance)
+	wordsNotToPick := l.alreadyUsedWords
+	wordOne := l.getRandomWordWithCustomWordChance(wordsNotToPick, l.Settings.CustomWords, l.Settings.CustomWordsChance)
 	wordsNotToPick = append(wordsNotToPick, wordOne)
-	wordTwo := getRandomWordWithCustomWordChance(lobby, wordsNotToPick, lobby.CustomWords, lobby.CustomWordsChance)
+	wordTwo := l.getRandomWordWithCustomWordChance(wordsNotToPick, l.Settings.CustomWords, l.Settings.CustomWordsChance)
 	wordsNotToPick = append(wordsNotToPick, wordTwo)
-	wordThree := getRandomWordWithCustomWordChance(lobby, wordsNotToPick, lobby.CustomWords, lobby.CustomWordsChance)
+	wordThree := l.getRandomWordWithCustomWordChance(wordsNotToPick, l.Settings.CustomWords, l.Settings.CustomWordsChance)
 
 	return []string{
 		wordOne,
@@ -75,15 +75,15 @@ func GetRandomWords(lobby *Lobby) []string {
 	}
 }
 
-func getRandomWordWithCustomWordChance(lobby *Lobby, wordsAlreadyUsed []string, customWords []string, customWordChance int) string {
+func (l *Lobby) getRandomWordWithCustomWordChance(wordsAlreadyUsed []string, customWords []string, customWordChance int) string {
 	if rand.Intn(100)+1 <= customWordChance {
-		return getUnusedCustomWord(lobby, wordsAlreadyUsed, customWords)
+		return l.getUnusedCustomWord(wordsAlreadyUsed, customWords)
 	}
 
-	return getUnusedRandomWord(lobby, wordsAlreadyUsed)
+	return l.getUnusedRandomWord(wordsAlreadyUsed)
 }
 
-func getUnusedCustomWord(lobby *Lobby, wordsAlreadyUsed []string, customWords []string) string {
+func (l *Lobby) getUnusedCustomWord(wordsAlreadyUsed []string, customWords []string) string {
 OUTER_LOOP:
 	for _, word := range customWords {
 		for _, usedWord := range wordsAlreadyUsed {
@@ -95,16 +95,16 @@ OUTER_LOOP:
 		return word
 	}
 
-	return getUnusedRandomWord(lobby, wordsAlreadyUsed)
+	return l.getUnusedRandomWord(wordsAlreadyUsed)
 }
 
-func getUnusedRandomWord(lobby *Lobby, wordsAlreadyUsed []string) string {
+func (l *Lobby) getUnusedRandomWord(wordsAlreadyUsed []string) string {
 	//We attempt to find a random word for a hundred times, afterwards we just use any.
 	randomnessAttempts := 0
 	var word string
 OUTER_LOOP:
 	for {
-		word = lobby.Words[rand.Int()%len(lobby.Words)]
+		word = l.words[rand.Int()%len(l.words)]
 		for _, usedWord := range wordsAlreadyUsed {
 			if usedWord == word {
 				if randomnessAttempts == 100 {

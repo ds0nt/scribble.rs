@@ -1,4 +1,4 @@
-package communication
+package server
 
 import (
 	"errors"
@@ -24,87 +24,67 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 func createDefaultLobbyCreatePageData() *CreatePageData {
 
 	return &CreatePageData{
-		SettingBounds:     game.LobbySettingBounds,
-		Languages:         game.SupportedLanguages,
-		DrawingTime:       "120",
-		Rounds:            "4",
-		MaxPlayers:        "12",
-		CustomWordsChance: "50",
-		ClientsPerIPLimit: "1",
-		EnableVotekick:    "true",
-		Language:          "english",
+		SettingBounds: game.LobbySettingBounds,
 	}
 }
 
 // CreatePageData defines all non-static data for the lobby create page.
 type CreatePageData struct {
 	*game.SettingBounds
-	Errors            []string
-	Languages         map[string]string
-	DrawingTime       string
-	Rounds            string
-	MaxPlayers        string
-	CustomWords       string
-	CustomWordsChance string
-	ClientsPerIPLimit string
-	EnableVotekick    string
-	Language          string
+	Errors []string
 }
 
-// ssrCreateLobby allows creating a lobby, optionally returning errors that
+func parseCreateLobbyData(r *http.Request) (params game.LobbySettings, language string, errs []string) {
+	errs = []string{}
+
+	language = "english"
+	params.DrawingTime = 90
+	params.Rounds = 5
+	params.MaxPlayers = 32
+	params.CustomWords = []string{}
+	params.CustomWordsChance = 0
+	params.ClientsPerIPLimit = 32
+	params.EnableVotekick = true
+	return
+}
+func parseCreatePageData(r *http.Request) CreatePageData {
+	return CreatePageData{}
+}
+
+// ssrCreateLobbyHandler allows creating a lobby, optionally returning errors that
 // occurred during creation.
-func ssrCreateLobby(w http.ResponseWriter, r *http.Request) {
+func ssrCreateLobbyHandler(w http.ResponseWriter, r *http.Request) {
+
 	formParseError := r.ParseForm()
 	if formParseError != nil {
 		http.Error(w, formParseError.Error(), http.StatusBadRequest)
 		return
 	}
+	playerName := getPlayernameHandler(r)
+	avatarId, ok := getAvatarId(r)
+	if !ok {
+		userFacingError(w, "invalid avatar id")
+		return
+	}
 
-	language, languageInvalid := parseLanguage(r.Form.Get("language"))
-	drawingTime, drawingTimeInvalid := parseDrawingTime(r.Form.Get("drawing_time"))
-	rounds, roundsInvalid := parseRounds(r.Form.Get("rounds"))
-	maxPlayers, maxPlayersInvalid := parseMaxPlayers(r.Form.Get("max_players"))
-	customWords, customWordsInvalid := parseCustomWords(r.Form.Get("custom_words"))
-	customWordChance, customWordChanceInvalid := parseCustomWordsChance(r.Form.Get("custom_words_chance"))
-	clientsPerIPLimit, clientsPerIPLimitInvalid := parseClientsPerIPLimit(r.Form.Get("clients_per_ip_limit"))
-	enableVotekick := r.Form.Get("enable_votekick") == "true"
+	http.SetCookie(w, &http.Cookie{
+		Name:     "X-Username",
+		Value:    r.Form.Get("name"),
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "X-Avatar",
+		Value:    r.Form.Get("avatarId"),
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
 
 	//Prevent resetting the form, since that would be annoying as hell.
-	pageData := CreatePageData{
-		SettingBounds:     game.LobbySettingBounds,
-		Languages:         game.SupportedLanguages,
-		DrawingTime:       r.Form.Get("drawing_time"),
-		Rounds:            r.Form.Get("rounds"),
-		MaxPlayers:        r.Form.Get("max_players"),
-		CustomWords:       r.Form.Get("custom_words"),
-		CustomWordsChance: r.Form.Get("custom_words_chance"),
-		ClientsPerIPLimit: r.Form.Get("clients_per_ip_limit"),
-		EnableVotekick:    r.Form.Get("enable_votekick"),
-		Language:          r.Form.Get("language"),
-	}
+	pageData := parseCreatePageData(r)
 
-	if languageInvalid != nil {
-		pageData.Errors = append(pageData.Errors, languageInvalid.Error())
-	}
-	if drawingTimeInvalid != nil {
-		pageData.Errors = append(pageData.Errors, drawingTimeInvalid.Error())
-	}
-	if roundsInvalid != nil {
-		pageData.Errors = append(pageData.Errors, roundsInvalid.Error())
-	}
-	if maxPlayersInvalid != nil {
-		pageData.Errors = append(pageData.Errors, maxPlayersInvalid.Error())
-	}
-	if customWordsInvalid != nil {
-		pageData.Errors = append(pageData.Errors, customWordsInvalid.Error())
-	}
-	if customWordChanceInvalid != nil {
-		pageData.Errors = append(pageData.Errors, customWordChanceInvalid.Error())
-	}
-	if clientsPerIPLimitInvalid != nil {
-		pageData.Errors = append(pageData.Errors, clientsPerIPLimitInvalid.Error())
-	}
-
+	lobbyParams, language, errors := parseCreateLobbyData(r)
+	pageData.Errors = errors
 	if len(pageData.Errors) != 0 {
 		err := lobbyCreatePage.ExecuteTemplate(w, "lobby_create.html", pageData)
 		if err != nil {
@@ -113,28 +93,55 @@ func ssrCreateLobby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var playerName = getPlayername(r)
+	lobbyID := ""
+	lobbyCookie, err := r.Cookie("X-LobbyId")
+	if err == nil && lobbyCookie.Value != "" {
+		lobbyID = lobbyCookie.Value
+		// clear redirect
+		http.SetCookie(w, &http.Cookie{
+			Name:     "X-LobbyId",
+			Value:    "",
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
+		})
 
-	session, lobby, createError := game.CreateLobby(playerName, language, drawingTime, rounds, maxPlayers, customWordChance, clientsPerIPLimit, customWords, enableVotekick)
-	if createError != nil {
-		pageData.Errors = append(pageData.Errors, createError.Error())
-		templateError := lobbyCreatePage.ExecuteTemplate(w, "lobby_create.html", pageData)
-		if templateError != nil {
-			userFacingError(w, templateError.Error())
-		}
-
-		return
 	}
 
-	// Use the players generated usersession and pass it as a cookie.
-	http.SetCookie(w, &http.Cookie{
-		Name:     "usersession",
-		Value:    session,
-		Path:     "/",
-		SameSite: http.SameSiteStrictMode,
-	})
+	if lobbyID == "" {
+		player, lobby, createError := game.NewLobby(
+			playerName,
+			userSession(r),
+			language,
+			avatarId,
+			lobbyParams,
+		)
+		if createError != nil {
+			pageData.Errors = append(pageData.Errors, createError.Error())
+			templateError := lobbyCreatePage.ExecuteTemplate(w, "lobby_create.html", pageData)
+			if templateError != nil {
+				userFacingError(w, templateError.Error())
+			}
 
-	http.Redirect(w, r, "/ssrEnterLobby?lobby_id="+lobby.ID, http.StatusFound)
+			return
+		}
+		lobbyID = lobby.ID
+
+		// Use the players generated usersession and pass it as a cookie.
+		http.SetCookie(w, &http.Cookie{
+			Name:     "X-UserSession",
+			Value:    player.GetSession(),
+			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
+		})
+	} else {
+		// lobby, err := game.GetLoadLobby(lobbyID)
+		// if err != nil {
+		// 	userFacingError(w, "lobby not foud")
+		// }
+		// lobby.JoinPlayer(playerName, "")
+	}
+
+	http.Redirect(w, r, "/ssrEnterLobby?lobby_id="+lobbyID, http.StatusFound)
 }
 
 func parsePlayerName(value string) (string, error) {
